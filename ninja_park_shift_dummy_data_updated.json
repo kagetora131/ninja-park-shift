@@ -1,0 +1,1406 @@
+{
+  "_readme": {
+    "説明": "忍者テーマパークのシフト表アプリ開発用ダミーデータです。忍具屋・修行アトラクション・忍者茶屋の3施設を持つ架空の忍者テーマパークを想定しています。",
+    "facilities": {
+      "goods": "忍具屋（お土産・グッズ販売）",
+      "amuse": "修行アトラクション（手裏剣投げ・忍者迷路など）",
+      "cafe": "忍者茶屋"
+    },
+    "avatar_mood_ルール": {
+      "happy": "希望シフト通りに組めており、連勤3日以内",
+      "neutral": "希望とほぼ一致しているが、多少の調整あり（施設ヘルプ1回程度）",
+      "tired": "連勤4日以上、または慣れない施設への応援が続いている",
+      "unhappy": "希望と大きく異なる、休み希望日に出勤、または希望外施設への応援が連続している"
+    },
+    "備考": "修行アトラクションは安全管理上の資格（手裏剣・忍具の取り扱い研修修了）が必要なため、忍具屋・忍者茶屋間の掛け持ちより難易度が高い設定にしています。",
+    "期間": "2026-08-01〜2026-08-14（2週間分）",
+    "売上ロジック": "金土日月=黒字想定、火水木=赤字想定。施設別配分はamuse45%/goods30%/cafe25%を目安に按分。",
+    "施設ヘルプ・多能工ルール_追記": "amuseスタッフ(手裏剣資格保有者)はgoods・cafeへの接客ヘルプが可能（逆方向のamuseへの応援は資格保有者のみ）。goods⇔cafeを両方担当できる多能工スタッフも複数名在籍(emp001, emp003, emp008, emp009, emp010)。cafeに関わるスタッフは「カフェ厨房対応可否」で厨房作業の可否を区別しており、cafeメイン所属者の中でも対応可否が分かれる設定（emp003:可, emp005:不可, emp010:可）。"
+  },
+  "employees": [
+    {
+      "id": "emp001",
+      "name": "佐藤 美咲",
+      "role": "社員",
+      "main_facility": "goods",
+      "cross_trained": [
+        "cafe"
+      ],
+      "avatar_base": "default_female_01",
+      "希望勤務日数_目安": 5,
+      "希望休み曜日": [
+        "水"
+      ],
+      "連勤上限": 5,
+      "求人反映_雇用形態": "契約社員",
+      "求人反映_給与": "時給1200円",
+      "求人反映_給与備考": "交通費全額支給",
+      "カフェ厨房対応可否": false
+    },
+    {
+      "id": "emp002",
+      "name": "田中 翔太",
+      "role": "アルバイト",
+      "main_facility": "amuse",
+      "cross_trained": [
+        "cafe",
+        "goods"
+      ],
+      "avatar_base": "default_male_01",
+      "希望勤務日数_目安": 3,
+      "希望休み曜日": [
+        "月",
+        "火"
+      ],
+      "連勤上限": 3,
+      "資格": [
+        "手裏剣・忍具取り扱い研修修了"
+      ],
+      "求人反映_雇用形態": "契約社員",
+      "求人反映_給与": "月給270,000円〜300,000円",
+      "求人反映_給与備考": "交通費全額支給",
+      "カフェ厨房対応可否": false
+    },
+    {
+      "id": "emp003",
+      "name": "中村 彩",
+      "role": "アルバイト",
+      "main_facility": "cafe",
+      "cross_trained": [
+        "goods"
+      ],
+      "avatar_base": "default_female_02",
+      "希望勤務日数_目安": 4,
+      "希望休み曜日": [
+        "日"
+      ],
+      "連勤上限": 4,
+      "求人反映_雇用形態": "契約社員",
+      "求人反映_給与": "時給1200円",
+      "求人反映_給与備考": "交通費全額支給",
+      "カフェ厨房対応可否": true
+    },
+    {
+      "id": "emp004",
+      "name": "高橋 陸",
+      "role": "アルバイト",
+      "main_facility": "goods",
+      "cross_trained": [],
+      "avatar_base": "default_male_02",
+      "希望勤務日数_目安": 2,
+      "希望休み曜日": [
+        "土",
+        "日"
+      ],
+      "連勤上限": 2,
+      "求人反映_雇用形態": "契約社員",
+      "求人反映_給与": "時給1200円",
+      "求人反映_給与備考": "交通費全額支給"
+    },
+    {
+      "id": "emp005",
+      "name": "伊藤 花",
+      "role": "パート",
+      "main_facility": "cafe",
+      "cross_trained": [],
+      "avatar_base": "default_female_03",
+      "希望勤務日数_目安": 4,
+      "希望休み曜日": [
+        "木"
+      ],
+      "連勤上限": 4,
+      "求人反映_雇用形態": "契約社員",
+      "求人反映_給与": "時給1200円",
+      "求人反映_給与備考": "交通費全額支給",
+      "カフェ厨房対応可否": false
+    },
+    {
+      "id": "emp006",
+      "name": "渡辺 蓮",
+      "role": "社員",
+      "main_facility": "amuse",
+      "cross_trained": [
+        "cafe",
+        "goods"
+      ],
+      "avatar_base": "default_male_03",
+      "希望勤務日数_目安": 6,
+      "希望休み曜日": [],
+      "連勤上限": 6,
+      "資格": [
+        "手裏剣・忍具取り扱い研修修了"
+      ],
+      "求人反映_雇用形態": "契約社員",
+      "求人反映_給与": "月給270,000円〜300,000円",
+      "求人反映_給与備考": "交通費全額支給",
+      "カフェ厨房対応可否": false
+    },
+    {
+      "id": "emp007",
+      "name": "小林 葵",
+      "role": "アルバイト",
+      "main_facility": "amuse",
+      "cross_trained": [
+        "cafe",
+        "goods"
+      ],
+      "avatar_base": "default_female_04",
+      "希望勤務日数_目安": 3,
+      "希望休み曜日": [
+        "水",
+        "木"
+      ],
+      "連勤上限": 3,
+      "資格": [
+        "手裏剣・忍具取り扱い研修修了"
+      ],
+      "求人反映_雇用形態": "契約社員",
+      "求人反映_給与": "月給270,000円〜300,000円",
+      "求人反映_給与備考": "交通費全額支給",
+      "カフェ厨房対応可否": false
+    },
+    {
+      "id": "emp008",
+      "name": "加藤 優斗",
+      "role": "アルバイト",
+      "main_facility": "goods",
+      "cross_trained": [
+        "cafe"
+      ],
+      "avatar_base": "default_male_04",
+      "希望勤務日数_目安": 4,
+      "希望休み曜日": [
+        "火"
+      ],
+      "連勤上限": 4,
+      "求人反映_雇用形態": "契約社員",
+      "求人反映_給与": "時給1200円",
+      "求人反映_給与備考": "交通費全額支給",
+      "カフェ厨房対応可否": false
+    },
+    {
+      "id": "emp009",
+      "name": "阿部 楓",
+      "role": "アルバイト",
+      "main_facility": "goods",
+      "cross_trained": [
+        "cafe"
+      ],
+      "avatar_base": "default_female_05",
+      "希望勤務日数_目安": 3,
+      "希望休み曜日": [
+        "月"
+      ],
+      "連勤上限": 3,
+      "求人反映_雇用形態": "契約社員",
+      "求人反映_給与": "時給1200円",
+      "求人反映_給与備考": "交通費全額支給",
+      "カフェ厨房対応可否": false
+    },
+    {
+      "id": "emp010",
+      "name": "山本 隼人",
+      "role": "アルバイト",
+      "main_facility": "cafe",
+      "cross_trained": [
+        "goods"
+      ],
+      "avatar_base": "default_male_05",
+      "希望勤務日数_目安": 3,
+      "希望休み曜日": [
+        "火"
+      ],
+      "連勤上限": 3,
+      "求人反映_雇用形態": "契約社員",
+      "求人反映_給与": "時給1200円",
+      "求人反映_給与備考": "交通費全額支給",
+      "カフェ厨房対応可否": true
+    }
+  ],
+  "shifts": [
+    {
+      "date": "2026-08-01",
+      "day": "土",
+      "employee_id": "emp001",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-01",
+      "day": "土",
+      "employee_id": "emp002",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-01",
+      "day": "土",
+      "employee_id": "emp003",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "20:30",
+      "希望通りか": true,
+      "休憩分": 120,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-01",
+      "day": "土",
+      "employee_id": "emp006",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-01",
+      "day": "土",
+      "employee_id": "emp007",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-01",
+      "day": "土",
+      "employee_id": "emp008",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-01",
+      "day": "土",
+      "employee_id": "emp009",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "休憩分": 60,
+      "実働時間": 8,
+      "希望通りか": true
+    },
+    {
+      "date": "2026-08-01",
+      "day": "土",
+      "employee_id": "emp010",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "14:30",
+      "休憩分": 0,
+      "実働時間": 4,
+      "希望通りか": true
+    },
+    {
+      "date": "2026-08-02",
+      "day": "日",
+      "employee_id": "emp001",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "20:30",
+      "希望通りか": false,
+      "備考": "本来goods所属だが繁忙のためcafeへ応援",
+      "休憩分": 120,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-02",
+      "day": "日",
+      "employee_id": "emp002",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-02",
+      "day": "日",
+      "employee_id": "emp003",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "20:30",
+      "希望通りか": false,
+      "備考": "希望休みだったが繁忙期のため出勤",
+      "休憩分": 120,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-02",
+      "day": "日",
+      "employee_id": "emp006",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-02",
+      "day": "日",
+      "employee_id": "emp007",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-03",
+      "day": "月",
+      "employee_id": "emp005",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "14:30",
+      "希望通りか": true,
+      "休憩分": 0,
+      "実働時間": 4.0
+    },
+    {
+      "date": "2026-08-03",
+      "day": "月",
+      "employee_id": "emp006",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-03",
+      "day": "月",
+      "employee_id": "emp008",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-03",
+      "day": "月",
+      "employee_id": "emp010",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "14:30",
+      "休憩分": 0,
+      "実働時間": 4,
+      "希望通りか": true
+    },
+    {
+      "date": "2026-08-04",
+      "day": "火",
+      "employee_id": "emp001",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-04",
+      "day": "火",
+      "employee_id": "emp005",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "14:30",
+      "希望通りか": true,
+      "休憩分": 0,
+      "実働時間": 4.0
+    },
+    {
+      "date": "2026-08-04",
+      "day": "火",
+      "employee_id": "emp006",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-04",
+      "day": "火",
+      "employee_id": "emp009",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "休憩分": 60,
+      "実働時間": 8,
+      "希望通りか": true
+    },
+    {
+      "date": "2026-08-05",
+      "day": "水",
+      "employee_id": "emp002",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-05",
+      "day": "水",
+      "employee_id": "emp004",
+      "facility": "goods",
+      "start": "17:00",
+      "end": "21:00",
+      "希望通りか": true,
+      "休憩分": 0,
+      "実働時間": 4.0,
+      "求人反映備考": "goods求人に短時間パターンの掲載が無いため、cafe求人の短時間パターンを参考値として使用"
+    },
+    {
+      "date": "2026-08-05",
+      "day": "水",
+      "employee_id": "emp006",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-05",
+      "day": "水",
+      "employee_id": "emp008",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "20:30",
+      "希望通りか": false,
+      "備考": "本来goods所属だがcafeへ応援、不慣れな業務",
+      "休憩分": 120,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-06",
+      "day": "木",
+      "employee_id": "emp001",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-06",
+      "day": "木",
+      "employee_id": "emp002",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-06",
+      "day": "木",
+      "employee_id": "emp006",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-06",
+      "day": "木",
+      "employee_id": "emp010",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "14:30",
+      "休憩分": 0,
+      "実働時間": 4,
+      "希望通りか": true
+    },
+    {
+      "date": "2026-08-07",
+      "day": "金",
+      "employee_id": "emp001",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-07",
+      "day": "金",
+      "employee_id": "emp003",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "20:30",
+      "希望通りか": true,
+      "休憩分": 120,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-07",
+      "day": "金",
+      "employee_id": "emp006",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-07",
+      "day": "金",
+      "employee_id": "emp007",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-07",
+      "day": "金",
+      "employee_id": "emp009",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "休憩分": 60,
+      "実働時間": 8,
+      "希望通りか": true
+    },
+    {
+      "date": "2026-08-08",
+      "day": "土",
+      "employee_id": "emp001",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "備考": "6連勤目",
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-08",
+      "day": "土",
+      "employee_id": "emp002",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-08",
+      "day": "土",
+      "employee_id": "emp003",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "20:30",
+      "希望通りか": true,
+      "休憩分": 120,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-08",
+      "day": "土",
+      "employee_id": "emp006",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "備考": "8連勤目",
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-08",
+      "day": "土",
+      "employee_id": "emp007",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-08",
+      "day": "土",
+      "employee_id": "emp008",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-08",
+      "day": "土",
+      "employee_id": "emp009",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "休憩分": 60,
+      "実働時間": 8,
+      "希望通りか": true
+    },
+    {
+      "date": "2026-08-08",
+      "day": "土",
+      "employee_id": "emp010",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "14:30",
+      "休憩分": 0,
+      "実働時間": 4,
+      "希望通りか": true
+    },
+    {
+      "date": "2026-08-09",
+      "day": "日",
+      "employee_id": "emp001",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": false,
+      "備考": "7連勤目、連勤上限(5)超過",
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-09",
+      "day": "日",
+      "employee_id": "emp002",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-09",
+      "day": "日",
+      "employee_id": "emp006",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "備考": "9連勤目、連勤上限(6)大幅超過",
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-09",
+      "day": "日",
+      "employee_id": "emp007",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-10",
+      "day": "月",
+      "employee_id": "emp005",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "14:30",
+      "希望通りか": true,
+      "休憩分": 0,
+      "実働時間": 4.0
+    },
+    {
+      "date": "2026-08-10",
+      "day": "月",
+      "employee_id": "emp006",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": false,
+      "備考": "10連勤目、休みなし継続",
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-10",
+      "day": "月",
+      "employee_id": "emp008",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-10",
+      "day": "月",
+      "employee_id": "emp010",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "14:30",
+      "休憩分": 0,
+      "実働時間": 4,
+      "希望通りか": true
+    },
+    {
+      "date": "2026-08-11",
+      "day": "火",
+      "employee_id": "emp001",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-11",
+      "day": "火",
+      "employee_id": "emp004",
+      "facility": "goods",
+      "start": "17:00",
+      "end": "21:00",
+      "希望通りか": true,
+      "休憩分": 0,
+      "実働時間": 4.0,
+      "求人反映備考": "goods求人に短時間パターンの掲載が無いため、cafe求人の短時間パターンを参考値として使用"
+    },
+    {
+      "date": "2026-08-11",
+      "day": "火",
+      "employee_id": "emp006",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "備考": "ようやく休み明け1日目",
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-11",
+      "day": "火",
+      "employee_id": "emp009",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "休憩分": 60,
+      "実働時間": 8,
+      "希望通りか": true
+    },
+    {
+      "date": "2026-08-12",
+      "day": "水",
+      "employee_id": "emp002",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-12",
+      "day": "水",
+      "employee_id": "emp005",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "14:30",
+      "希望通りか": false,
+      "備考": "希望休みだが出勤",
+      "休憩分": 0,
+      "実働時間": 4.0
+    },
+    {
+      "date": "2026-08-12",
+      "day": "水",
+      "employee_id": "emp006",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-12",
+      "day": "水",
+      "employee_id": "emp008",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "20:30",
+      "希望通りか": false,
+      "備考": "goods所属だが2回目のcafe応援、不慣れが続く",
+      "休憩分": 120,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-13",
+      "day": "木",
+      "employee_id": "emp001",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-13",
+      "day": "木",
+      "employee_id": "emp003",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "20:30",
+      "希望通りか": true,
+      "休憩分": 120,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-13",
+      "day": "木",
+      "employee_id": "emp006",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-13",
+      "day": "木",
+      "employee_id": "emp009",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "休憩分": 60,
+      "実働時間": 8,
+      "希望通りか": true
+    },
+    {
+      "date": "2026-08-14",
+      "day": "金",
+      "employee_id": "emp001",
+      "facility": "goods",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-14",
+      "day": "金",
+      "employee_id": "emp002",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-14",
+      "day": "金",
+      "employee_id": "emp004",
+      "facility": "goods",
+      "start": "17:00",
+      "end": "21:00",
+      "希望通りか": true,
+      "休憩分": 0,
+      "実働時間": 4.0,
+      "求人反映備考": "goods求人に短時間パターンの掲載が無いため、cafe求人の短時間パターンを参考値として使用"
+    },
+    {
+      "date": "2026-08-14",
+      "day": "金",
+      "employee_id": "emp006",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-14",
+      "day": "金",
+      "employee_id": "emp007",
+      "facility": "amuse",
+      "start": "09:00",
+      "end": "18:00",
+      "希望通りか": true,
+      "休憩分": 60,
+      "実働時間": 8.0
+    },
+    {
+      "date": "2026-08-14",
+      "day": "金",
+      "employee_id": "emp010",
+      "facility": "cafe",
+      "start": "10:30",
+      "end": "14:30",
+      "休憩分": 0,
+      "実働時間": 4,
+      "希望通りか": true
+    }
+  ],
+  "expected_avatar_mood_example": {
+    "説明": "アプリ側のロジック確認用に、上記データから期待される表情判定の一例",
+    "emp006_渡辺蓮": {
+      "date": "2026-08-10",
+      "連勤日数": 10,
+      "希望通りか": false,
+      "mood": "unhappy",
+      "理由": "連勤上限(6)を大幅超過、休みなし継続"
+    },
+    "emp008_加藤優斗": {
+      "date": "2026-08-12",
+      "連勤日数": 5,
+      "希望通りか": false,
+      "mood": "tired",
+      "理由": "本来施設(goods)ではないcafeへの応援が2回連続、不慣れな業務が続いている"
+    },
+    "emp002_田中翔太": {
+      "date": "2026-08-01",
+      "連勤日数": 1,
+      "希望通りか": true,
+      "mood": "happy",
+      "理由": "希望通りの施設・時間・連勤なし"
+    }
+  },
+  "daily_finance": [
+    {
+      "date": "2026-08-01",
+      "day": "土",
+      "category": "黒字想定",
+      "facilities": {
+        "amuse": {
+          "revenue": 427500,
+          "labor_cost": 171000
+        },
+        "goods": {
+          "revenue": 285000,
+          "labor_cost": 114000
+        },
+        "cafe": {
+          "revenue": 237500,
+          "labor_cost": 95000
+        }
+      },
+      "total_revenue": 950000,
+      "total_labor_cost": 380000,
+      "profit": 570000,
+      "is_black": true
+    },
+    {
+      "date": "2026-08-02",
+      "day": "日",
+      "category": "黒字想定",
+      "facilities": {
+        "amuse": {
+          "revenue": 459000,
+          "labor_cost": 157500
+        },
+        "goods": {
+          "revenue": 306000,
+          "labor_cost": 105000
+        },
+        "cafe": {
+          "revenue": 255000,
+          "labor_cost": 87500
+        }
+      },
+      "total_revenue": 1020000,
+      "total_labor_cost": 350000,
+      "profit": 670000,
+      "is_black": true
+    },
+    {
+      "date": "2026-08-03",
+      "day": "月",
+      "category": "黒字想定",
+      "facilities": {
+        "amuse": {
+          "revenue": 315000,
+          "labor_cost": 135000
+        },
+        "goods": {
+          "revenue": 210000,
+          "labor_cost": 90000
+        },
+        "cafe": {
+          "revenue": 175000,
+          "labor_cost": 75000
+        }
+      },
+      "total_revenue": 700000,
+      "total_labor_cost": 300000,
+      "profit": 400000,
+      "is_black": true
+    },
+    {
+      "date": "2026-08-04",
+      "day": "火",
+      "category": "赤字想定",
+      "facilities": {
+        "amuse": {
+          "revenue": 126000,
+          "labor_cost": 148500
+        },
+        "goods": {
+          "revenue": 84000,
+          "labor_cost": 99000
+        },
+        "cafe": {
+          "revenue": 70000,
+          "labor_cost": 82500
+        }
+      },
+      "total_revenue": 280000,
+      "total_labor_cost": 330000,
+      "profit": -50000,
+      "is_black": false
+    },
+    {
+      "date": "2026-08-05",
+      "day": "水",
+      "category": "赤字想定",
+      "facilities": {
+        "amuse": {
+          "revenue": 117000,
+          "labor_cost": 153000
+        },
+        "goods": {
+          "revenue": 78000,
+          "labor_cost": 102000
+        },
+        "cafe": {
+          "revenue": 65000,
+          "labor_cost": 85000
+        }
+      },
+      "total_revenue": 260000,
+      "total_labor_cost": 340000,
+      "profit": -80000,
+      "is_black": false
+    },
+    {
+      "date": "2026-08-06",
+      "day": "木",
+      "category": "赤字想定",
+      "facilities": {
+        "amuse": {
+          "revenue": 135000,
+          "labor_cost": 157500
+        },
+        "goods": {
+          "revenue": 90000,
+          "labor_cost": 105000
+        },
+        "cafe": {
+          "revenue": 75000,
+          "labor_cost": 87500
+        }
+      },
+      "total_revenue": 300000,
+      "total_labor_cost": 350000,
+      "profit": -50000,
+      "is_black": false
+    },
+    {
+      "date": "2026-08-07",
+      "day": "金",
+      "category": "黒字想定",
+      "facilities": {
+        "amuse": {
+          "revenue": 292500,
+          "labor_cost": 144000
+        },
+        "goods": {
+          "revenue": 195000,
+          "labor_cost": 96000
+        },
+        "cafe": {
+          "revenue": 162500,
+          "labor_cost": 80000
+        }
+      },
+      "total_revenue": 650000,
+      "total_labor_cost": 320000,
+      "profit": 330000,
+      "is_black": true
+    },
+    {
+      "date": "2026-08-08",
+      "day": "土",
+      "category": "黒字想定",
+      "facilities": {
+        "amuse": {
+          "revenue": 495000,
+          "labor_cost": 180000
+        },
+        "goods": {
+          "revenue": 330000,
+          "labor_cost": 120000
+        },
+        "cafe": {
+          "revenue": 275000,
+          "labor_cost": 100000
+        }
+      },
+      "total_revenue": 1100000,
+      "total_labor_cost": 400000,
+      "profit": 700000,
+      "is_black": true
+    },
+    {
+      "date": "2026-08-09",
+      "day": "日",
+      "category": "黒字想定",
+      "facilities": {
+        "amuse": {
+          "revenue": 472500,
+          "labor_cost": 171000
+        },
+        "goods": {
+          "revenue": 315000,
+          "labor_cost": 114000
+        },
+        "cafe": {
+          "revenue": 262500,
+          "labor_cost": 95000
+        }
+      },
+      "total_revenue": 1050000,
+      "total_labor_cost": 380000,
+      "profit": 670000,
+      "is_black": true
+    },
+    {
+      "date": "2026-08-10",
+      "day": "月",
+      "category": "黒字想定",
+      "facilities": {
+        "amuse": {
+          "revenue": 306000,
+          "labor_cost": 139500
+        },
+        "goods": {
+          "revenue": 204000,
+          "labor_cost": 93000
+        },
+        "cafe": {
+          "revenue": 170000,
+          "labor_cost": 77500
+        }
+      },
+      "total_revenue": 680000,
+      "total_labor_cost": 310000,
+      "profit": 370000,
+      "is_black": true
+    },
+    {
+      "date": "2026-08-11",
+      "day": "火",
+      "category": "赤字想定",
+      "facilities": {
+        "amuse": {
+          "revenue": 121500,
+          "labor_cost": 153000
+        },
+        "goods": {
+          "revenue": 81000,
+          "labor_cost": 102000
+        },
+        "cafe": {
+          "revenue": 67500,
+          "labor_cost": 85000
+        }
+      },
+      "total_revenue": 270000,
+      "total_labor_cost": 340000,
+      "profit": -70000,
+      "is_black": false
+    },
+    {
+      "date": "2026-08-12",
+      "day": "水",
+      "category": "赤字想定",
+      "facilities": {
+        "amuse": {
+          "revenue": 112500,
+          "labor_cost": 157500
+        },
+        "goods": {
+          "revenue": 75000,
+          "labor_cost": 105000
+        },
+        "cafe": {
+          "revenue": 62500,
+          "labor_cost": 87500
+        }
+      },
+      "total_revenue": 250000,
+      "total_labor_cost": 350000,
+      "profit": -100000,
+      "is_black": false
+    },
+    {
+      "date": "2026-08-13",
+      "day": "木",
+      "category": "赤字想定",
+      "facilities": {
+        "amuse": {
+          "revenue": 130500,
+          "labor_cost": 153000
+        },
+        "goods": {
+          "revenue": 87000,
+          "labor_cost": 102000
+        },
+        "cafe": {
+          "revenue": 72500,
+          "labor_cost": 85000
+        }
+      },
+      "total_revenue": 290000,
+      "total_labor_cost": 340000,
+      "profit": -50000,
+      "is_black": false
+    },
+    {
+      "date": "2026-08-14",
+      "day": "金",
+      "category": "黒字想定",
+      "facilities": {
+        "amuse": {
+          "revenue": 315000,
+          "labor_cost": 148500
+        },
+        "goods": {
+          "revenue": 210000,
+          "labor_cost": 99000
+        },
+        "cafe": {
+          "revenue": 175000,
+          "labor_cost": 82500
+        }
+      },
+      "total_revenue": 700000,
+      "total_labor_cost": 330000,
+      "profit": 370000,
+      "is_black": true
+    }
+  ],
+  "求人情報反映": {
+    "説明": "以下3件の実在求人（施設名以外の給与・勤務時間などの条件）を、ダミーデータの3施設にそれぞれ対応づけて反映しています。",
+    "施設別対応": {
+      "goods": {
+        "参照求人": "https://www.hitocom.net/kyujin/30719",
+        "雇用形態": "契約社員",
+        "給与形態": "時給制",
+        "給与": "時給1200円",
+        "給与備考": "交通費全額支給",
+        "勤務曜日": "土日祝含む週2日〜週5日 シフト制",
+        "休日": "週休2日(シフト制)",
+        "勤務パターン": [
+          {
+            "start": "08:30",
+            "end": "17:30",
+            "休憩分": 60,
+            "実働時間": 8
+          },
+          {
+            "start": "09:00",
+            "end": "18:00",
+            "休憩分": 60,
+            "実働時間": 8
+          }
+        ]
+      },
+      "amuse": {
+        "参照求人": "https://www.hitocom.net/kyujin/31277",
+        "雇用形態": "契約社員",
+        "給与形態": "月給制",
+        "給与": "月給270,000円〜300,000円",
+        "給与備考": "交通費全額支給",
+        "勤務曜日": "土日祝含む週5日 シフト制",
+        "休日": "週休2日(シフト制)",
+        "勤務パターン": [
+          {
+            "start": "09:00",
+            "end": "18:00",
+            "休憩分": 60,
+            "実働時間": 8
+          }
+        ]
+      },
+      "cafe": {
+        "参照求人": "https://www.hitocom.net/kyujin/30717",
+        "雇用形態": "契約社員",
+        "給与形態": "時給制",
+        "給与": "時給1200円",
+        "給与備考": "交通費全額支給",
+        "勤務曜日": "土日祝含む週2日〜週5日 シフト制",
+        "休日": "週休2日(シフト制)",
+        "勤務パターン": [
+          {
+            "start": "10:30",
+            "end": "14:30",
+            "休憩分": 0,
+            "実働時間": 4
+          },
+          {
+            "start": "17:00",
+            "end": "21:00",
+            "休憩分": 0,
+            "実働時間": 4
+          },
+          {
+            "start": "10:30",
+            "end": "20:30",
+            "休憩分": 120,
+            "実働時間": 8
+          }
+        ]
+      }
+    }
+  }
+}

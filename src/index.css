@@ -1,0 +1,76 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-void: #0a0d12;
+  --color-void-soft: #12161d;
+  --color-seal: #a5321f;
+  --color-seal-bright: #d9483b;
+  --color-paper: #ece3cf;
+  --color-paper-dim: #cfc4a6;
+  --color-gold: #b6924f;
+  --color-jade: #3d5a3a;
+
+  --font-mincho: 'Shippori Mincho', 'Hiragino Mincho ProN', serif;
+  --font-jp: 'Noto Sans JP', 'Hiragino Sans', sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, var(--color-void-soft), var(--color-void) 70%);
+  color: var(--color-paper);
+  font-family: var(--font-jp);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-seal);
+  color: var(--color-paper);
+}
+
+.font-mincho {
+  font-family: var(--font-mincho);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-void);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-gold);
+  border-radius: 999px;
+}
+
+@keyframes shuriken-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-shuriken {
+  animation: shuriken-spin 3s linear infinite;
+}
+
+@keyframes rise-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-rise {
+  animation: rise-fade 0.35s ease-out both;
+}
