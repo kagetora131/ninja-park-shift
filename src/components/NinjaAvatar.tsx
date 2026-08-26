@@ -56,28 +56,6 @@ export function NinjaAvatar({ employee, mood, facility, size = 'md', title }: Ni
           <img src={dataUri} alt={employee.name} width={px} height={px} className="h-full w-full" />
         </div>
 
-        {/* 鉢巻(ヘッドバンド) */}
-        <div
-          className="pointer-events-none absolute left-1/2 top-[30%] -translate-x-1/2 -translate-y-1/2 rounded-sm"
-          style={{
-            width: px * 1.02,
-            height: Math.max(4, px * 0.11),
-            background: 'var(--color-seal)',
-            boxShadow: '0 0 0 1px var(--color-gold)',
-            transform: 'translate(-50%, -50%) rotate(-3deg)',
-          }}
-        />
-        <div
-          className="pointer-events-none absolute rounded-full"
-          style={{
-            width: px * 0.1,
-            height: px * 0.1,
-            right: -px * 0.02,
-            top: px * 0.24,
-            background: 'var(--color-gold)',
-          }}
-        />
-
         {/* 表情アイコンバッジ */}
         <div
           className="absolute bottom-0 right-0 flex items-center justify-center rounded-full border-2 border-void"
