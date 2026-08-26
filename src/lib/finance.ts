@@ -1,4 +1,13 @@
+import { FACILITY_ORDER } from '../data/facilities';
 import type { DailyFinance } from '../types';
+
+/** facilities の売上・人件費から合計/損益/黒字判定を再計算する。 */
+export function recomputeFinanceTotals(day: DailyFinance): DailyFinance {
+  const totalRevenue = FACILITY_ORDER.reduce((sum, f) => sum + day.facilities[f].revenue, 0);
+  const totalLaborCost = FACILITY_ORDER.reduce((sum, f) => sum + day.facilities[f].laborCost, 0);
+  const profit = totalRevenue - totalLaborCost;
+  return { ...day, totalRevenue, totalLaborCost, profit, isBlack: profit >= 0 };
+}
 
 export interface RedStreak {
   length: number;

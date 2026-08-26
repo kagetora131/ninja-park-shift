@@ -1,24 +1,27 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadInitialDataset } from '../data/normalize';
 import { computeMoodMap } from '../lib/mood';
 import { weekdayJp } from '../lib/format';
-import type { Employee, MoodResult, ShiftEntry } from '../types';
+import { recomputeFinanceTotals } from '../lib/finance';
+import type { DailyFinance, Employee, FacilityId, MoodResult, ShiftEntry } from '../types';
 
-const STORAGE_KEY = 'ninja-park-shift:shifts:v1';
+const SHIFT_KEY = 'ninja-park-shift:shifts:v1';
+const EMPLOYEE_KEY = 'ninja-park-shift:employees:v1';
+const FINANCE_KEY = 'ninja-park-shift:finance:v1';
 
-function loadStoredShifts(): ShiftEntry[] | null {
+function loadStored<T>(key: string): T | null {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(key);
     if (!raw) return null;
-    return JSON.parse(raw) as ShiftEntry[];
+    return JSON.parse(raw) as T;
   } catch {
     return null;
   }
 }
 
-function saveStoredShifts(shifts: ShiftEntry[]) {
+function saveStored<T>(key: string, value: T) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(shifts));
+    window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
     // localStorage が使えない環境(プライベートモード等)では保存をあきらめる
   }
@@ -27,7 +30,7 @@ function saveStoredShifts(shifts: ShiftEntry[]) {
 export interface NewShiftInput {
   date: string;
   employeeId: string;
-  facility: ShiftEntry['facility'];
+  facility: FacilityId;
   start: string;
   end: string;
   breakMinutes: number;
@@ -35,11 +38,51 @@ export interface NewShiftInput {
   note?: string;
 }
 
+export interface EmployeeInput {
+  id?: string;
+  name: string;
+  role: string;
+  mainFacility: FacilityId;
+  crossTrained: FacilityId[];
+  desiredWorkDaysPerWeek: number;
+  desiredDaysOff: string[];
+  maxConsecutiveDays: number;
+  qualifications: string[];
+  employmentType?: string;
+  wage?: string;
+  wageNote?: string;
+  cafeKitchenOk?: boolean;
+}
+
+export interface FinanceInput {
+  date: string;
+  facility: FacilityId;
+  revenue: number;
+  laborCost: number;
+}
+
+function generateId(prefix: string): string {
+  return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
 export function useShiftStore() {
   const initial = useMemo(() => loadInitialDataset(), []);
-  const [employees] = useState<Employee[]>(initial.employees);
-  const [finance] = useState(initial.finance);
-  const [shifts, setShifts] = useState<ShiftEntry[]>(() => loadStoredShifts() ?? initial.shifts);
+  const [employees, setEmployees] = useState<Employee[]>(
+    () => loadStored<Employee[]>(EMPLOYEE_KEY) ?? initial.employees,
+  );
+  const [finance, setFinance] = useState<DailyFinance[]>(
+    () => loadStored<DailyFinance[]>(FINANCE_KEY) ?? initial.finance,
+  );
+  const [shifts, setShifts] = useState<ShiftEntry[]>(
+    () => loadStored<ShiftEntry[]>(SHIFT_KEY) ?? initial.shifts,
+  );
+
+  // 永続化はstateの変化を監視するeffectだけで行う(state更新関数の中でI/Oをすると、
+  // React StrictModeの二重呼び出しでID生成などの非純粋な処理が2回走り、
+  // localStorageとReact stateが食い違う不具合になるため)。
+  useEffect(() => saveStored(SHIFT_KEY, shifts), [shifts]);
+  useEffect(() => saveStored(EMPLOYEE_KEY, employees), [employees]);
+  useEffect(() => saveStored(FINANCE_KEY, finance), [finance]);
 
   const moodMap: Map<string, MoodResult> = useMemo(
     () => computeMoodMap(employees, shifts),
@@ -66,24 +109,62 @@ export function useShiftStore() {
         note: input.note,
       };
       const filtered = prev.filter((s) => s.id !== id);
-      const merged = [...filtered, next];
-      saveStoredShifts(merged);
-      return merged;
+      return [...filtered, next];
     });
   }, []);
 
   const removeShift = useCallback((id: string) => {
-    setShifts((prev) => {
-      const merged = prev.filter((s) => s.id !== id);
-      saveStoredShifts(merged);
-      return merged;
+    setShifts((prev) => prev.filter((s) => s.id !== id));
+  }, []);
+
+  const upsertEmployee = useCallback((input: EmployeeInput) => {
+    setEmployees((prev) => {
+      const existing = input.id ? prev.find((e) => e.id === input.id) : undefined;
+      const employee: Employee = {
+        id: existing?.id ?? generateId('emp'),
+        name: input.name,
+        role: input.role,
+        mainFacility: input.mainFacility,
+        crossTrained: input.crossTrained,
+        avatarBase: existing?.avatarBase ?? generateId('avatar'),
+        desiredWorkDaysPerWeek: input.desiredWorkDaysPerWeek,
+        desiredDaysOff: input.desiredDaysOff,
+        maxConsecutiveDays: input.maxConsecutiveDays,
+        qualifications: input.qualifications,
+        employmentType: input.employmentType,
+        wage: input.wage,
+        wageNote: input.wageNote,
+        cafeKitchenOk: input.cafeKitchenOk,
+      };
+      return existing
+        ? prev.map((e) => (e.id === employee.id ? employee : e))
+        : [...prev, employee];
     });
+  }, []);
+
+  const removeEmployee = useCallback((id: string) => {
+    setEmployees((prev) => prev.filter((e) => e.id !== id));
+    setShifts((prev) => prev.filter((s) => s.employeeId !== id));
+  }, []);
+
+  const updateFacilityFinance = useCallback((input: FinanceInput) => {
+    setFinance((prev) =>
+      prev.map((day) => {
+        if (day.date !== input.date) return day;
+        const facilities = {
+          ...day.facilities,
+          [input.facility]: { revenue: input.revenue, laborCost: input.laborCost },
+        };
+        return recomputeFinanceTotals({ ...day, facilities });
+      }),
+    );
   }, []);
 
   const resetToDummyData = useCallback(() => {
     setShifts(initial.shifts);
-    saveStoredShifts(initial.shifts);
-  }, [initial.shifts]);
+    setEmployees(initial.employees);
+    setFinance(initial.finance);
+  }, [initial.shifts, initial.employees, initial.finance]);
 
   return {
     employees,
@@ -93,6 +174,9 @@ export function useShiftStore() {
     moodMap,
     upsertShift,
     removeShift,
+    upsertEmployee,
+    removeEmployee,
+    updateFacilityFinance,
     resetToDummyData,
   };
 }

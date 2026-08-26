@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Pencil } from 'lucide-react';
 import { FACILITIES, FACILITY_ORDER } from '../data/facilities';
 import { formatDateJp, weekdayJp } from '../lib/format';
 import { bestProfitDay, longestRedStreak, totalsOf } from '../lib/finance';
 import { ShurikenIcon } from './ShurikenIcon';
+import type { FinanceDraft } from './FinanceEditModal';
 import type { DailyFinance } from '../types';
 
 function formatYen(value: number): string {
@@ -13,9 +14,10 @@ function formatYen(value: number): string {
 
 interface FinanceDashboardProps {
   finance: DailyFinance[];
+  onEditFacility: (draft: FinanceDraft) => void;
 }
 
-export function FinanceDashboard({ finance }: FinanceDashboardProps) {
+export function FinanceDashboard({ finance, onEditFacility }: FinanceDashboardProps) {
   const [selectedDate, setSelectedDate] = useState(finance[0]?.date ?? '');
   const totals = useMemo(() => totalsOf(finance), [finance]);
   const streak = useMemo(() => longestRedStreak(finance), [finance]);
@@ -110,7 +112,24 @@ export function FinanceDashboard({ finance }: FinanceDashboardProps) {
               const margin = f.revenue - f.laborCost;
               return (
                 <div key={facilityId} className="rounded-lg border border-paper/10 bg-void/40 p-3">
-                  <p className="mb-2 text-xs font-medium text-paper">{FACILITIES[facilityId].name}</p>
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-medium text-paper">{FACILITIES[facilityId].name}</p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onEditFacility({
+                          date: selected.date,
+                          facility: facilityId,
+                          revenue: f.revenue,
+                          laborCost: f.laborCost,
+                        })
+                      }
+                      className="text-paper-dim transition hover:text-gold"
+                      title="売上・人件費を編集"
+                    >
+                      <Pencil size={12} />
+                    </button>
+                  </div>
                   <p className="text-[11px] text-paper-dim">売上 {formatYen(f.revenue)}</p>
                   <p className="text-[11px] text-paper-dim">人件費 {formatYen(f.laborCost)}</p>
                   <p className={`text-[11px] font-medium ${margin >= 0 ? 'text-jade' : 'text-seal-bright'}`}>
