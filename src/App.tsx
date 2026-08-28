@@ -96,12 +96,15 @@ export default function App() {
         {activeTab === 'board' && (
           <ShiftBoard
             dates={dates}
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
             employees={employees}
             shifts={shifts}
             moodMap={moodMap}
             finance={finance}
             onEditShift={handleEditShift}
-            onAddShift={handleAddShift}
+            onAssignShift={upsertShift}
+            onRemoveShift={removeShift}
           />
         )}
 

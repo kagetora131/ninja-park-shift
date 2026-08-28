@@ -1,4 +1,4 @@
-import type { FacilityId, FacilityMeta } from '../types';
+import type { Employee, FacilityId, FacilityMeta } from '../types';
 
 export const FACILITIES: Record<FacilityId, FacilityMeta> = {
   goods: {
@@ -28,3 +28,8 @@ export const FACILITY_COLOR: Record<FacilityId, string> = {
   amuse: '#3d5a3a',
   cafe: '#8a6d4a',
 };
+
+/** 従業員が配置可能な施設(所属施設+応援可能施設)一覧。 */
+export function capableFacilities(employee: Employee): FacilityId[] {
+  return [employee.mainFacility, ...employee.crossTrained];
+}
