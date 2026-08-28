@@ -1,13 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadInitialDataset } from '../data/normalize';
+import { DEFAULT_WAGE_SETTINGS } from '../data/constants';
 import { computeMoodMap } from '../lib/mood';
 import { weekdayJp } from '../lib/format';
-import { recomputeFinanceTotals } from '../lib/finance';
-import type { DailyFinance, Employee, FacilityId, MoodResult, ShiftEntry } from '../types';
+import { computeDailyFinance } from '../lib/finance';
+import type {
+  AvatarGender,
+  Employee,
+  FacilityId,
+  FinanceRevenueRow,
+  MoodResult,
+  PostRequirements,
+  ShiftEntry,
+  WageSettings,
+} from '../types';
 
 const SHIFT_KEY = 'ninja-park-shift:shifts:v1';
 const EMPLOYEE_KEY = 'ninja-park-shift:employees:v1';
-const FINANCE_KEY = 'ninja-park-shift:finance:v1';
+const FINANCE_REVENUE_KEY = 'ninja-park-shift:finance-revenue:v1';
+const WAGE_SETTINGS_KEY = 'ninja-park-shift:wage-settings:v1';
+const POST_REQUIREMENTS_KEY = 'ninja-park-shift:post-requirements:v1';
 
 function loadStored<T>(key: string): T | null {
   try {
@@ -40,6 +52,7 @@ export interface NewShiftInput {
 
 export interface EmployeeInput {
   id?: string;
+  avatarBase?: string;
   name: string;
   role: string;
   mainFacility: FacilityId;
@@ -49,16 +62,18 @@ export interface EmployeeInput {
   maxConsecutiveDays: number;
   qualifications: string[];
   employmentType?: string;
-  wage?: string;
-  wageNote?: string;
   cafeKitchenOk?: boolean;
+  isTrainee?: boolean;
+  avatarGender?: AvatarGender;
+  avatarTop?: string;
+  avatarSkinColor?: string;
+  avatarGlasses?: boolean;
 }
 
 export interface FinanceInput {
   date: string;
   facility: FacilityId;
   revenue: number;
-  laborCost: number;
 }
 
 function generateId(prefix: string): string {
@@ -70,11 +85,17 @@ export function useShiftStore() {
   const [employees, setEmployees] = useState<Employee[]>(
     () => loadStored<Employee[]>(EMPLOYEE_KEY) ?? initial.employees,
   );
-  const [finance, setFinance] = useState<DailyFinance[]>(
-    () => loadStored<DailyFinance[]>(FINANCE_KEY) ?? initial.finance,
+  const [financeRevenue, setFinanceRevenue] = useState<FinanceRevenueRow[]>(
+    () => loadStored<FinanceRevenueRow[]>(FINANCE_REVENUE_KEY) ?? initial.financeRevenue,
   );
   const [shifts, setShifts] = useState<ShiftEntry[]>(
     () => loadStored<ShiftEntry[]>(SHIFT_KEY) ?? initial.shifts,
+  );
+  const [wageSettings, setWageSettings] = useState<WageSettings>(
+    () => loadStored<WageSettings>(WAGE_SETTINGS_KEY) ?? DEFAULT_WAGE_SETTINGS,
+  );
+  const [postRequirements, setPostRequirements] = useState<PostRequirements>(
+    () => loadStored<PostRequirements>(POST_REQUIREMENTS_KEY) ?? {},
   );
 
   // 永続化はstateの変化を監視するeffectだけで行う(state更新関数の中でI/Oをすると、
@@ -82,7 +103,9 @@ export function useShiftStore() {
   // localStorageとReact stateが食い違う不具合になるため)。
   useEffect(() => saveStored(SHIFT_KEY, shifts), [shifts]);
   useEffect(() => saveStored(EMPLOYEE_KEY, employees), [employees]);
-  useEffect(() => saveStored(FINANCE_KEY, finance), [finance]);
+  useEffect(() => saveStored(FINANCE_REVENUE_KEY, financeRevenue), [financeRevenue]);
+  useEffect(() => saveStored(WAGE_SETTINGS_KEY, wageSettings), [wageSettings]);
+  useEffect(() => saveStored(POST_REQUIREMENTS_KEY, postRequirements), [postRequirements]);
 
   const moodMap: Map<string, MoodResult> = useMemo(
     () => computeMoodMap(employees, shifts),
@@ -90,6 +113,12 @@ export function useShiftStore() {
   );
 
   const employeeMap = useMemo(() => new Map(employees.map((e) => [e.id, e])), [employees]);
+
+  // 人件費はシフト+給与設定から自動計算するため、売上データを保存するたびに再計算する。
+  const finance = useMemo(
+    () => financeRevenue.map((row) => computeDailyFinance(row, shifts, employeeMap, wageSettings)),
+    [financeRevenue, shifts, employeeMap, wageSettings],
+  );
 
   const upsertShift = useCallback((input: NewShiftInput) => {
     setShifts((prev) => {
@@ -126,15 +155,18 @@ export function useShiftStore() {
         role: input.role,
         mainFacility: input.mainFacility,
         crossTrained: input.crossTrained,
-        avatarBase: existing?.avatarBase ?? generateId('avatar'),
+        avatarBase: existing?.avatarBase ?? input.avatarBase ?? generateId('avatar'),
         desiredWorkDaysPerWeek: input.desiredWorkDaysPerWeek,
         desiredDaysOff: input.desiredDaysOff,
         maxConsecutiveDays: input.maxConsecutiveDays,
         qualifications: input.qualifications,
         employmentType: input.employmentType,
-        wage: input.wage,
-        wageNote: input.wageNote,
         cafeKitchenOk: input.cafeKitchenOk,
+        isTrainee: input.isTrainee,
+        avatarGender: input.avatarGender,
+        avatarTop: input.avatarTop,
+        avatarSkinColor: input.avatarSkinColor,
+        avatarGlasses: input.avatarGlasses,
       };
       return existing
         ? prev.map((e) => (e.id === employee.id ? employee : e))
@@ -147,24 +179,42 @@ export function useShiftStore() {
     setShifts((prev) => prev.filter((s) => s.employeeId !== id));
   }, []);
 
-  const updateFacilityFinance = useCallback((input: FinanceInput) => {
-    setFinance((prev) =>
-      prev.map((day) => {
-        if (day.date !== input.date) return day;
-        const facilities = {
-          ...day.facilities,
-          [input.facility]: { revenue: input.revenue, laborCost: input.laborCost },
-        };
-        return recomputeFinanceTotals({ ...day, facilities });
-      }),
+  const updateFacilityRevenue = useCallback((input: FinanceInput) => {
+    setFinanceRevenue((prev) =>
+      prev.map((row) =>
+        row.date === input.date
+          ? { ...row, facilityRevenue: { ...row.facilityRevenue, [input.facility]: input.revenue } }
+          : row,
+      ),
     );
+  }, []);
+
+  const updateFacilityRate = useCallback((facility: FacilityId, value: number) => {
+    setWageSettings((prev) => ({ ...prev, facilityRates: { ...prev.facilityRates, [facility]: value } }));
+  }, []);
+
+  const updateTraineeHourlyWage = useCallback((value: number) => {
+    setWageSettings((prev) => ({ ...prev, traineeHourlyWage: value }));
+  }, []);
+
+  const updateFulltimeMonthlySalary = useCallback((value: number) => {
+    setWageSettings((prev) => ({ ...prev, fulltimeMonthlySalary: value }));
+  }, []);
+
+  const updatePostRequirement = useCallback((weekday: string, facility: FacilityId, value: number | null) => {
+    setPostRequirements((prev) => ({
+      ...prev,
+      [weekday]: { ...prev[weekday], [facility]: value },
+    }));
   }, []);
 
   const resetToDummyData = useCallback(() => {
     setShifts(initial.shifts);
     setEmployees(initial.employees);
-    setFinance(initial.finance);
-  }, [initial.shifts, initial.employees, initial.finance]);
+    setFinanceRevenue(initial.financeRevenue);
+    setWageSettings(DEFAULT_WAGE_SETTINGS);
+    setPostRequirements({});
+  }, [initial.shifts, initial.employees, initial.financeRevenue]);
 
   return {
     employees,
@@ -172,11 +222,17 @@ export function useShiftStore() {
     finance,
     shifts,
     moodMap,
+    wageSettings,
+    postRequirements,
     upsertShift,
     removeShift,
     upsertEmployee,
     removeEmployee,
-    updateFacilityFinance,
+    updateFacilityRevenue,
+    updateFacilityRate,
+    updateTraineeHourlyWage,
+    updateFulltimeMonthlySalary,
+    updatePostRequirement,
     resetToDummyData,
   };
 }

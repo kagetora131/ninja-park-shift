@@ -1,12 +1,41 @@
 import { FACILITY_ORDER } from '../data/facilities';
-import type { DailyFinance } from '../types';
+import { computeFacilityLaborCost } from './wage';
+import type { DailyFinance, Employee, FinanceRevenueRow, ShiftEntry, WageSettings } from '../types';
 
-/** facilities の売上・人件費から合計/損益/黒字判定を再計算する。 */
-export function recomputeFinanceTotals(day: DailyFinance): DailyFinance {
-  const totalRevenue = FACILITY_ORDER.reduce((sum, f) => sum + day.facilities[f].revenue, 0);
-  const totalLaborCost = FACILITY_ORDER.reduce((sum, f) => sum + day.facilities[f].laborCost, 0);
+/**
+ * 保存された売上(FinanceRevenueRow)と、その日のシフト+給与設定から人件費を自動計算し、
+ * 画面表示用の完全なDailyFinance(施設別内訳・合計・損益・黒字判定)を組み立てる。
+ */
+export function computeDailyFinance(
+  row: FinanceRevenueRow,
+  shifts: ShiftEntry[],
+  employeeMap: Map<string, Employee>,
+  wageSettings: WageSettings,
+): DailyFinance {
+  const facilities = Object.fromEntries(
+    FACILITY_ORDER.map((f) => [
+      f,
+      {
+        revenue: row.facilityRevenue[f] ?? 0,
+        laborCost: Math.round(computeFacilityLaborCost(shifts, employeeMap, row.date, f, wageSettings)),
+      },
+    ]),
+  ) as DailyFinance['facilities'];
+
+  const totalRevenue = FACILITY_ORDER.reduce((sum, f) => sum + facilities[f].revenue, 0);
+  const totalLaborCost = FACILITY_ORDER.reduce((sum, f) => sum + facilities[f].laborCost, 0);
   const profit = totalRevenue - totalLaborCost;
-  return { ...day, totalRevenue, totalLaborCost, profit, isBlack: profit >= 0 };
+
+  return {
+    date: row.date,
+    day: row.day,
+    category: row.category,
+    facilities,
+    totalRevenue,
+    totalLaborCost,
+    profit,
+    isBlack: profit >= 0,
+  };
 }
 
 export interface RedStreak {

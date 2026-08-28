@@ -14,7 +14,7 @@ export function StaffView({ employees, onEdit, onCreate }: StaffViewProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-mincho text-sm font-bold text-paper">忍者名簿({employees.length}名)</h2>
+        <h2 className="font-mincho text-sm font-bold text-paper">スタッフ一覧({employees.length}名)</h2>
         <button
           type="button"
           onClick={onCreate}
@@ -38,7 +38,10 @@ export function StaffView({ employees, onEdit, onCreate }: StaffViewProps) {
               <NinjaAvatar employee={employee} mood="happy" size="lg" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-paper">{employee.name}</p>
-                <p className="text-[11px] text-paper-dim">{employee.role}</p>
+                <p className="text-[11px] text-paper-dim">
+                  {employee.role}
+                  {employee.isTrainee && <span className="ml-1 text-gold">・研修中</span>}
+                </p>
                 <div className="mt-1.5 flex items-center gap-1 text-[11px] text-gold">
                   <MainIcon size={12} />
                   {FACILITIES[employee.mainFacility].name}
@@ -51,9 +54,6 @@ export function StaffView({ employees, onEdit, onCreate }: StaffViewProps) {
                 <p className="mt-1 text-[10px] text-paper-dim">
                   週{employee.desiredWorkDaysPerWeek}日希望・連勤上限{employee.maxConsecutiveDays}日
                 </p>
-                {employee.wage && (
-                  <p className="mt-1 text-[10px] text-paper-dim">{employee.wage}</p>
-                )}
               </div>
             </button>
           );

@@ -1,11 +1,18 @@
 import { useState } from 'react';
 import { Trash2, X } from 'lucide-react';
+import { AvatarPicker } from './AvatarPicker';
 import { FACILITIES, FACILITY_ORDER } from '../data/facilities';
+import { HAIR_STYLES_MALE, SKIN_COLORS } from '../data/avatarOptions';
 import type { EmployeeInput } from '../hooks/useShiftStore';
-import type { Employee, FacilityId } from '../types';
+import type { AvatarGender, Employee, FacilityId } from '../types';
 
 const WEEKDAYS = ['月', '火', '水', '木', '金', '土', '日'];
+const ROLES = ['社員', 'アルバイト', 'パート'];
 const SHURIKEN_QUALIFICATION = '手裏剣・忍具取り扱い研修修了';
+
+function randomAvatarBase(): string {
+  return `avatar_${Math.random().toString(36).slice(2, 9)}`;
+}
 
 export interface EmployeeDraft {
   mode: 'create' | 'edit';
@@ -34,9 +41,14 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
     existing?.qualifications.includes(SHURIKEN_QUALIFICATION) ?? false,
   );
   const [employmentType, setEmploymentType] = useState(existing?.employmentType ?? '');
-  const [wage, setWage] = useState(existing?.wage ?? '');
-  const [wageNote, setWageNote] = useState(existing?.wageNote ?? '');
   const [cafeKitchenOk, setCafeKitchenOk] = useState(existing?.cafeKitchenOk ?? false);
+  const [isTrainee, setIsTrainee] = useState(existing?.isTrainee ?? false);
+
+  const [avatarBase] = useState(existing?.avatarBase ?? randomAvatarBase);
+  const [avatarGender, setAvatarGender] = useState<AvatarGender>(existing?.avatarGender ?? 'male');
+  const [avatarTop, setAvatarTop] = useState(existing?.avatarTop ?? HAIR_STYLES_MALE[0].value);
+  const [avatarSkinColor, setAvatarSkinColor] = useState(existing?.avatarSkinColor ?? SKIN_COLORS[0]);
+  const [avatarGlasses, setAvatarGlasses] = useState(existing?.avatarGlasses ?? false);
 
   const toggleCrossTrained = (facility: FacilityId) => {
     setCrossTrained((prev) =>
@@ -53,8 +65,9 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
     if (!name.trim()) return;
     onSave({
       id: existing?.id,
+      avatarBase,
       name: name.trim(),
-      role: role.trim(),
+      role,
       mainFacility,
       crossTrained: crossTrained.filter((f) => f !== mainFacility),
       desiredWorkDaysPerWeek,
@@ -62,9 +75,12 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
       maxConsecutiveDays,
       qualifications: hasShurikenQualification ? [SHURIKEN_QUALIFICATION] : [],
       employmentType: employmentType.trim() || undefined,
-      wage: wage.trim() || undefined,
-      wageNote: wageNote.trim() || undefined,
       cafeKitchenOk,
+      isTrainee,
+      avatarGender,
+      avatarTop,
+      avatarSkinColor,
+      avatarGlasses,
     });
     onClose();
   };
@@ -85,6 +101,20 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <AvatarPicker
+            avatarBase={avatarBase}
+            gender={avatarGender}
+            top={avatarTop}
+            skinColor={avatarSkinColor}
+            glasses={avatarGlasses}
+            onChange={(patch) => {
+              if (patch.gender !== undefined) setAvatarGender(patch.gender);
+              if (patch.top !== undefined) setAvatarTop(patch.top);
+              if (patch.skinColor !== undefined) setAvatarSkinColor(patch.skinColor);
+              if (patch.glasses !== undefined) setAvatarGlasses(patch.glasses);
+            }}
+          />
+
           <div>
             <label className="mb-1 block text-xs text-paper-dim">名前</label>
             <input
@@ -97,14 +127,23 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-paper-dim">雇用形態(役割)</label>
-            <input
-              type="text"
+            <label className="mb-1 block text-xs text-paper-dim">雇用形態</label>
+            <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              placeholder="社員 / アルバイト / パート"
               className="w-full rounded-md border border-paper/20 bg-void px-3 py-2 text-sm text-paper focus:border-gold focus:outline-none"
-            />
+            >
+              {ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+            {role === '社員' && (
+              <p className="mt-1 text-[11px] text-paper-dim">
+                ※人件費は「給与・ポスト設定」の社員月給を日割りして自動計算されます
+              </p>
+            )}
           </div>
 
           <div>
@@ -220,36 +259,23 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
             忍者茶屋の厨房対応が可能
           </label>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-xs text-paper-dim">給与</label>
-              <input
-                type="text"
-                value={wage}
-                onChange={(e) => setWage(e.target.value)}
-                placeholder="時給1200円"
-                className="w-full rounded-md border border-paper/20 bg-void px-2 py-1.5 text-sm text-paper focus:border-gold focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-paper-dim">雇用形態(求人用)</label>
-              <input
-                type="text"
-                value={employmentType}
-                onChange={(e) => setEmploymentType(e.target.value)}
-                placeholder="契約社員"
-                className="w-full rounded-md border border-paper/20 bg-void px-2 py-1.5 text-sm text-paper focus:border-gold focus:outline-none"
-              />
-            </div>
-          </div>
+          <label className="flex items-center gap-2 text-xs text-paper-dim">
+            <input
+              type="checkbox"
+              checked={isTrainee}
+              onChange={(e) => setIsTrainee(e.target.checked)}
+              className="h-3.5 w-3.5 accent-gold"
+            />
+            研修中(人件費は「研修中時給」が優先適用されます)
+          </label>
 
           <div>
-            <label className="mb-1 block text-xs text-paper-dim">給与備考</label>
+            <label className="mb-1 block text-xs text-paper-dim">備考(求人用の雇用形態表記など)</label>
             <input
               type="text"
-              value={wageNote}
-              onChange={(e) => setWageNote(e.target.value)}
-              placeholder="交通費全額支給"
+              value={employmentType}
+              onChange={(e) => setEmploymentType(e.target.value)}
+              placeholder="契約社員"
               className="w-full rounded-md border border-paper/20 bg-void px-3 py-2 text-sm text-paper focus:border-gold focus:outline-none"
             />
           </div>

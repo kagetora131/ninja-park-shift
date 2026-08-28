@@ -9,7 +9,6 @@ export interface FinanceDraft {
   date: string;
   facility: FacilityId;
   revenue: number;
-  laborCost: number;
 }
 
 interface FinanceEditModalProps {
@@ -20,11 +19,10 @@ interface FinanceEditModalProps {
 
 export function FinanceEditModal({ draft, onClose, onSave }: FinanceEditModalProps) {
   const [revenue, setRevenue] = useState(draft.revenue);
-  const [laborCost, setLaborCost] = useState(draft.laborCost);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ date: draft.date, facility: draft.facility, revenue, laborCost });
+    onSave({ date: draft.date, facility: draft.facility, revenue });
     onClose();
   };
 
@@ -36,7 +34,7 @@ export function FinanceEditModal({ draft, onClose, onSave }: FinanceEditModalPro
       >
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="font-mincho text-base font-bold text-paper">売上・人件費を編集</h2>
+            <h2 className="font-mincho text-base font-bold text-paper">売上を編集</h2>
             <p className="text-xs text-paper-dim">
               {formatDateJp(draft.date, weekdayJp(draft.date))} ／ {FACILITIES[draft.facility].name}
             </p>
@@ -58,17 +56,9 @@ export function FinanceEditModal({ draft, onClose, onSave }: FinanceEditModalPro
               className="w-full rounded-md border border-paper/20 bg-void px-3 py-2 text-sm text-paper focus:border-gold focus:outline-none"
             />
           </div>
-          <div>
-            <label className="mb-1 block text-xs text-paper-dim">人件費(円)</label>
-            <input
-              type="number"
-              min={0}
-              step={1000}
-              value={laborCost}
-              onChange={(e) => setLaborCost(Number(e.target.value))}
-              className="w-full rounded-md border border-paper/20 bg-void px-3 py-2 text-sm text-paper focus:border-gold focus:outline-none"
-            />
-          </div>
+          <p className="text-[11px] text-paper-dim">
+            人件費はシフト実働時間と「給与・ポスト設定」の給与から自動計算されます。
+          </p>
 
           <div className="flex justify-end gap-2 pt-1">
             <button

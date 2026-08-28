@@ -33,7 +33,11 @@ interface NinjaAvatarProps {
 
 export function NinjaAvatar({ employee, mood, facility, size = 'md', title }: NinjaAvatarProps) {
   const px = SIZE_PX[size];
-  const dataUri = generateNinjaAvatar(employee.avatarBase, mood);
+  const dataUri = generateNinjaAvatar(employee.avatarBase, mood, {
+    top: employee.avatarTop,
+    skinColor: employee.avatarSkinColor,
+    glasses: employee.avatarGlasses,
+  });
   const MoodIcon = MOOD_ICON[mood];
   const isHelping = facility && facility !== employee.mainFacility;
   const backgroundColor = FACILITY_COLOR[facility ?? employee.mainFacility];

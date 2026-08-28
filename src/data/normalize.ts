@@ -1,5 +1,5 @@
 import raw from './rawData';
-import type { DailyFinance, Employee, FacilityId, ShiftDataset, ShiftEntry } from '../types';
+import type { Employee, FacilityId, FinanceRevenueRow, ShiftDataset, ShiftEntry } from '../types';
 
 interface RawEmployee {
   id: string;
@@ -13,8 +13,6 @@ interface RawEmployee {
   連勤上限: number;
   資格?: string[];
   求人反映_雇用形態?: string;
-  求人反映_給与?: string;
-  求人反映_給与備考?: string;
   カフェ厨房対応可否?: boolean;
 }
 
@@ -36,10 +34,6 @@ interface RawFinance {
   day: string;
   category: string;
   facilities: Record<FacilityId, { revenue: number; labor_cost: number }>;
-  total_revenue: number;
-  total_labor_cost: number;
-  profit: number;
-  is_black: boolean;
 }
 
 interface RawDataset {
@@ -61,9 +55,8 @@ function normalizeEmployee(e: RawEmployee): Employee {
     maxConsecutiveDays: e.連勤上限,
     qualifications: e.資格 ?? [],
     employmentType: e.求人反映_雇用形態,
-    wage: e.求人反映_給与,
-    wageNote: e.求人反映_給与備考,
     cafeKitchenOk: e.カフェ厨房対応可否,
+    isTrainee: false,
   };
 }
 
@@ -83,22 +76,18 @@ function normalizeShift(s: RawShift): ShiftEntry {
   };
 }
 
-function normalizeFinance(f: RawFinance): DailyFinance {
-  const facilities = Object.fromEntries(
-    (Object.entries(f.facilities) as [FacilityId, { revenue: number; labor_cost: number }][]).map(
-      ([id, v]) => [id, { revenue: v.revenue, laborCost: v.labor_cost }],
-    ),
-  ) as DailyFinance['facilities'];
+/** ダミーデータの人件費(labor_cost)は初期値としては使わず、売上のみを取り出す。
+ *  人件費はシフト+給与設定から自動計算する([[src/lib/wage.ts]])。 */
+function normalizeFinanceRevenue(f: RawFinance): FinanceRevenueRow {
+  const facilityRevenue = Object.fromEntries(
+    (Object.entries(f.facilities) as [FacilityId, { revenue: number }][]).map(([id, v]) => [id, v.revenue]),
+  ) as Record<FacilityId, number>;
 
   return {
     date: f.date,
     day: f.day,
     category: f.category,
-    facilities,
-    totalRevenue: f.total_revenue,
-    totalLaborCost: f.total_labor_cost,
-    profit: f.profit,
-    isBlack: f.is_black,
+    facilityRevenue,
   };
 }
 
@@ -107,6 +96,6 @@ export function loadInitialDataset(): ShiftDataset {
   return {
     employees: data.employees.map(normalizeEmployee),
     shifts: data.shifts.map(normalizeShift),
-    finance: data.daily_finance.map(normalizeFinance),
+    financeRevenue: data.daily_finance.map(normalizeFinanceRevenue),
   };
 }

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { TrendingDown, TrendingUp, X } from 'lucide-react';
 import { NinjaAvatar } from './NinjaAvatar';
-import { DateNav } from './DateNav';
+import { DateTabs } from './DateTabs';
+import { CoverageStrip } from './CoverageStrip';
 import { ShiftRosterPanel } from './ShiftRosterPanel';
 import { FACILITIES, FACILITY_ORDER, capableFacilities } from '../data/facilities';
 import { SHIFT_PATTERNS } from '../data/shiftPatterns';
@@ -10,7 +11,7 @@ import { MOOD_LABEL } from '../lib/mood';
 import { EMPLOYEE_DRAG_MIME } from '../lib/dragDrop';
 import { useAutoScrollOnDrag } from '../hooks/useAutoScrollOnDrag';
 import type { NewShiftInput } from '../hooks/useShiftStore';
-import type { DailyFinance, Employee, FacilityId, MoodResult, ShiftEntry } from '../types';
+import type { DailyFinance, Employee, FacilityId, MoodResult, PostRequirements, ShiftEntry } from '../types';
 
 interface ShiftBoardProps {
   dates: string[];
@@ -20,6 +21,7 @@ interface ShiftBoardProps {
   shifts: ShiftEntry[];
   moodMap: Map<string, MoodResult>;
   finance: DailyFinance[];
+  postRequirements: PostRequirements;
   onEditShift: (shift: ShiftEntry) => void;
   onAssignShift: (input: NewShiftInput) => void;
   onRemoveShift: (id: string) => void;
@@ -33,6 +35,7 @@ export function ShiftBoard({
   shifts,
   moodMap,
   finance,
+  postRequirements,
   onEditShift,
   onAssignShift,
   onRemoveShift,
@@ -82,7 +85,15 @@ export function ShiftBoard({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <DateNav dates={dates} value={selectedDate} onChange={onSelectDate} />
+        <DateTabs
+          dates={dates}
+          value={selectedDate}
+          onChange={onSelectDate}
+          dotColorFor={(date) => {
+            const f = finance.find((day) => day.date === date);
+            return f?.isBlack ? 'var(--color-jade)' : 'var(--color-seal)';
+          }}
+        />
         {todayFinance && (
           <div
             className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs ${
@@ -120,6 +131,8 @@ export function ShiftBoard({
             const facilityShifts = shiftsForDate
               .filter((s) => s.facility === facility)
               .sort((a, b) => a.start.localeCompare(b.start));
+            const required = postRequirements[selectedDay]?.[facility];
+            const isUnderStaffed = required != null && facilityShifts.length < required;
 
             const isDropTargetKnown = !!draggingEmployee;
             const isMain = draggingEmployee?.mainFacility === facility;
@@ -147,8 +160,13 @@ export function ShiftBoard({
               >
                 <div className="mb-2 flex items-center justify-between">
                   <h3 className="font-mincho text-sm font-bold text-paper">{FACILITIES[facility].name}</h3>
-                  <span className="text-[11px] text-paper-dim">{facilityShifts.length}名</span>
+                  <span className={`text-[11px] ${isUnderStaffed ? 'font-medium text-seal-bright' : 'text-paper-dim'}`}>
+                    {facilityShifts.length}
+                    {required != null ? ` / ${required}` : ''}名
+                  </span>
                 </div>
+
+                <CoverageStrip facilityShifts={facilityShifts} required={required} />
 
                 <div className="min-h-[80px] flex-1 space-y-2">
                   {facilityShifts.length === 0 && (

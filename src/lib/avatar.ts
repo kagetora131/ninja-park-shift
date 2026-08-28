@@ -1,12 +1,14 @@
 import { createAvatar } from '@dicebear/core';
 import { avataaars } from '@dicebear/collection';
 import type { Options as AvataaarsOptions } from '@dicebear/avataaars';
+import { GLASSES_STYLES } from '../data/avatarOptions';
 import type { Mood } from '../types';
 
 type EyebrowOption = NonNullable<AvataaarsOptions['eyebrows']>[number];
 type EyeOption = NonNullable<AvataaarsOptions['eyes']>[number];
 type MouthOption = NonNullable<AvataaarsOptions['mouth']>[number];
 type TopOption = NonNullable<AvataaarsOptions['top']>[number];
+type AccessoryOption = NonNullable<AvataaarsOptions['accessories']>[number];
 
 interface FaceOptions {
   eyebrows: EyebrowOption[];
@@ -66,14 +68,25 @@ function pickBySeed<T>(seed: string, arr: T[]): T {
   return arr[hashString(seed) % arr.length];
 }
 
+export interface AvatarCustomization {
+  top?: string;
+  skinColor?: string;
+  glasses?: boolean;
+}
+
 const cache = new Map<string, string>();
 
 /**
- * 従業員の avatarBase を「素顔」の種にして髪型・肌色は常に固定し、
+ * 従業員の avatarBase を「素顔」の種にして髪型・肌色は基本固定し、
  * mood によって眉・目・口だけを変化させることで、同一キャラクターの表情差分に見せる。
+ * top/skinColor/glasses を指定すると、スタッフ登録時のカスタマイズを優先する。
  */
-export function generateNinjaAvatar(avatarBase: string, mood: Mood): string {
-  const cacheKey = `${avatarBase}:${mood}`;
+export function generateNinjaAvatar(
+  avatarBase: string,
+  mood: Mood,
+  customization: AvatarCustomization = {},
+): string {
+  const cacheKey = `${avatarBase}:${mood}:${customization.top ?? ''}:${customization.skinColor ?? ''}:${customization.glasses ?? false}`;
   const cached = cache.get(cacheKey);
   if (cached) return cached;
 
@@ -82,11 +95,12 @@ export function generateNinjaAvatar(avatarBase: string, mood: Mood): string {
     seed: avatarBase,
     size: 128,
     backgroundColor: ['transparent'],
-    accessoriesProbability: 0,
+    accessories: customization.glasses ? (GLASSES_STYLES as unknown as AccessoryOption[]) : ['round'],
+    accessoriesProbability: customization.glasses ? 100 : 0,
     facialHairProbability: 0,
-    top: HAIR_STYLES,
+    top: customization.top ? [customization.top as TopOption] : HAIR_STYLES,
     hairColor: [pickBySeed(`${avatarBase}-hair`, HAIR_COLORS)],
-    skinColor: [pickBySeed(`${avatarBase}-skin`, SKIN_COLORS)],
+    skinColor: [customization.skinColor ?? pickBySeed(`${avatarBase}-skin`, SKIN_COLORS)],
     clothing: ['hoodie'],
     clothesColor: ['1a1a1a'],
     eyebrows: [pickBySeed(cacheKey, face.eyebrows)],

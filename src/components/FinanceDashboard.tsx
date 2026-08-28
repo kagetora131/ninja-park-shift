@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AlertTriangle, Pencil } from 'lucide-react';
+import { DateTabs } from './DateTabs';
 import { FACILITIES, FACILITY_ORDER } from '../data/facilities';
 import { formatDateJp, weekdayJp } from '../lib/format';
 import { bestProfitDay, longestRedStreak, totalsOf } from '../lib/finance';
@@ -30,6 +31,16 @@ export function FinanceDashboard({ finance, onEditFacility }: FinanceDashboardPr
 
   return (
     <div className="space-y-5">
+      <DateTabs
+        dates={finance.map((f) => f.date)}
+        value={selectedDate}
+        onChange={setSelectedDate}
+        dotColorFor={(date) => {
+          const f = finance.find((day) => day.date === date);
+          return f?.isBlack ? 'var(--color-jade)' : 'var(--color-seal)';
+        }}
+      />
+
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard label="期間合計 売上" value={formatYen(totals.revenue)} tone="paper" />
         <StatCard label="期間合計 人件費" value={formatYen(totals.laborCost)} tone="paper" />
@@ -121,17 +132,16 @@ export function FinanceDashboard({ finance, onEditFacility }: FinanceDashboardPr
                           date: selected.date,
                           facility: facilityId,
                           revenue: f.revenue,
-                          laborCost: f.laborCost,
                         })
                       }
                       className="text-paper-dim transition hover:text-gold"
-                      title="売上・人件費を編集"
+                      title="売上を編集"
                     >
                       <Pencil size={12} />
                     </button>
                   </div>
                   <p className="text-[11px] text-paper-dim">売上 {formatYen(f.revenue)}</p>
-                  <p className="text-[11px] text-paper-dim">人件費 {formatYen(f.laborCost)}</p>
+                  <p className="text-[11px] text-paper-dim">人件費(自動計算) {formatYen(f.laborCost)}</p>
                   <p className={`text-[11px] font-medium ${margin >= 0 ? 'text-jade' : 'text-seal-bright'}`}>
                     差引 {formatYen(margin)}
                   </p>
