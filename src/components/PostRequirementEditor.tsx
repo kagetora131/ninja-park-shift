@@ -1,5 +1,6 @@
 import { WEEKDAYS, SALARY_WORKING_DAYS_PER_MONTH } from '../data/constants';
-import { FACILITIES, FACILITY_COLOR, FACILITY_ORDER } from '../data/facilities';
+import { FACILITY_COLOR, FACILITY_ORDER } from '../data/facilities';
+import { useLabelContext } from '../hooks/LabelContext';
 import type { FacilityId, PostRequirements, WageSettings } from '../types';
 
 interface PostRequirementEditorProps {
@@ -19,6 +20,7 @@ export function PostRequirementEditor({
   onChangeFulltimeMonthlySalary,
   onChangePostRequirement,
 }: PostRequirementEditorProps) {
+  const { facilityName } = useLabelContext();
   return (
     <div className="space-y-6">
       <section className="rounded-xl border border-paper/10 bg-void-soft/50 p-4">
@@ -32,7 +34,7 @@ export function PostRequirementEditor({
             <div key={f} className="flex items-center justify-between gap-3 text-sm">
               <span className="flex items-center gap-1.5 text-paper">
                 <span className="h-2 w-2 rounded-full" style={{ background: FACILITY_COLOR[f] }} />
-                {FACILITIES[f].name}スタッフ
+                {facilityName(f)}スタッフ
               </span>
               <label className="flex items-center gap-1.5 text-xs text-paper-dim">
                 <input
@@ -93,7 +95,7 @@ export function PostRequirementEditor({
                 <th className="py-1.5 pr-3 font-medium">曜日</th>
                 {FACILITY_ORDER.map((f) => (
                   <th key={f} className="px-2 py-1.5 font-medium">
-                    {FACILITIES[f].name}
+                    {facilityName(f)}
                   </th>
                 ))}
               </tr>

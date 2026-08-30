@@ -4,12 +4,13 @@ import { NinjaAvatar } from './NinjaAvatar';
 import { DateTabs } from './DateTabs';
 import { CoverageStrip } from './CoverageStrip';
 import { ShiftRosterPanel } from './ShiftRosterPanel';
-import { FACILITIES, FACILITY_ORDER, capableFacilities } from '../data/facilities';
+import { FACILITY_ORDER, capableFacilities } from '../data/facilities';
 import { SHIFT_PATTERNS } from '../data/shiftPatterns';
 import { formatYen, weekdayJp } from '../lib/format';
 import { MOOD_LABEL } from '../lib/mood';
 import { EMPLOYEE_DRAG_MIME } from '../lib/dragDrop';
 import { useAutoScrollOnDrag } from '../hooks/useAutoScrollOnDrag';
+import { useLabelContext } from '../hooks/LabelContext';
 import type { NewShiftInput } from '../hooks/useShiftStore';
 import type { DailyFinance, Employee, FacilityId, MoodResult, PostRequirements, ShiftEntry } from '../types';
 
@@ -41,6 +42,7 @@ export function ShiftBoard({
   onRemoveShift,
 }: ShiftBoardProps) {
   useAutoScrollOnDrag();
+  const { employeeName, facilityName } = useLabelContext();
   const [draggingEmployeeId, setDraggingEmployeeId] = useState<string | null>(null);
   const [dragOverFacility, setDragOverFacility] = useState<FacilityId | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -78,7 +80,7 @@ export function ShiftBoard({
     });
 
     if (!capableFacilities(employee).includes(facility)) {
-      showNotice(`${employee.name}は${FACILITIES[facility].name}が未経験です。無理のないシフトか確認しましょう。`);
+      showNotice(`${employeeName(employee)}は${facilityName(facility)}が未経験です。無理のないシフトか確認しましょう。`);
     }
   };
 
@@ -159,7 +161,7 @@ export function ShiftBoard({
                 className={`flex flex-col rounded-xl border-2 bg-void-soft/50 p-3 transition-colors ${ringClass}`}
               >
                 <div className="mb-2 flex items-center justify-between">
-                  <h3 className="font-mincho text-sm font-bold text-paper">{FACILITIES[facility].name}</h3>
+                  <h3 className="font-mincho text-sm font-bold text-paper">{facilityName(facility)}</h3>
                   <span className={`text-[11px] ${isUnderStaffed ? 'font-medium text-seal-bright' : 'text-paper-dim'}`}>
                     {facilityShifts.length}
                     {required != null ? ` / ${required}` : ''}名
@@ -197,7 +199,7 @@ export function ShiftBoard({
                       >
                         <NinjaAvatar employee={employee} mood={mood?.mood ?? 'neutral'} facility={facility} size="sm" />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-medium text-paper">{employee.name}</p>
+                          <p className="truncate text-xs font-medium text-paper">{employeeName(employee)}</p>
                           <p className="text-[10px] text-paper-dim">
                             {shift.start}–{shift.end} ・{mood ? MOOD_LABEL[mood.mood] : ''}
                           </p>

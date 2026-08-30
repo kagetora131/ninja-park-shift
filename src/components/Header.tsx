@@ -1,13 +1,24 @@
-import { RotateCcw, Swords } from 'lucide-react';
+import { LogOut, Swords } from 'lucide-react';
+import { useLabelContext } from '../hooks/LabelContext';
+import type { UserRole } from '../types';
 
 interface HeaderProps {
-  onReset: () => void;
+  role: UserRole;
+  email: string | undefined;
+  onSignOut: () => void;
 }
 
-export function Header({ onReset }: HeaderProps) {
+const ROLE_LABEL: Record<UserRole, string> = {
+  manager: '忍者頭領(マネージャー)',
+  employee: '従業員',
+};
+
+export function Header({ role, email, onSignOut }: HeaderProps) {
+  const { locale, setLocale } = useLabelContext();
+
   return (
     <header className="border-b border-paper/10 bg-void-soft/60 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full border border-gold/60 bg-void text-gold">
             <Swords size={20} />
@@ -21,15 +32,37 @@ export function Header({ onReset }: HeaderProps) {
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onReset}
-          className="flex items-center gap-1.5 rounded-full border border-paper/20 px-3 py-1.5 text-xs text-paper-dim transition hover:border-seal hover:text-seal-bright"
-          title="編集内容を破棄してダミーデータに戻す"
-        >
-          <RotateCcw size={14} />
-          初期状態に戻す
-        </button>
+
+        <div className="flex items-center gap-3">
+          <div className="hidden text-right text-[11px] text-paper-dim sm:block">
+            <p className="text-gold">{ROLE_LABEL[role]}</p>
+            <p>{email}</p>
+          </div>
+
+          <div className="flex rounded-full border border-paper/20 p-0.5 text-[11px]">
+            {(['ja', 'en'] as const).map((l) => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => setLocale(l)}
+                className={`rounded-full px-2.5 py-1 transition ${
+                  locale === l ? 'bg-gold/20 text-gold' : 'text-paper-dim hover:text-paper'
+                }`}
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="flex items-center gap-1.5 rounded-full border border-paper/20 px-3 py-1.5 text-xs text-paper-dim transition hover:border-seal hover:text-seal-bright"
+          >
+            <LogOut size={14} />
+            ログアウト
+          </button>
+        </div>
       </div>
     </header>
   );

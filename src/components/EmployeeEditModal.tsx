@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Trash2, X } from 'lucide-react';
+import { KeyRound, Trash2, X } from 'lucide-react';
 import { AvatarPicker } from './AvatarPicker';
 import { FACILITIES, FACILITY_ORDER } from '../data/facilities';
 import { HAIR_STYLES_MALE, SKIN_COLORS } from '../data/avatarOptions';
+import { supabase } from '../lib/supabaseClient';
 import type { EmployeeInput } from '../hooks/useShiftStore';
 import type { AvatarGender, Employee, FacilityId } from '../types';
 
@@ -10,8 +11,8 @@ const WEEKDAYS = ['月', '火', '水', '木', '金', '土', '日'];
 const ROLES = ['社員', 'アルバイト', 'パート'];
 const SHURIKEN_QUALIFICATION = '手裏剣・忍具取り扱い研修修了';
 
-function randomAvatarBase(): string {
-  return `avatar_${Math.random().toString(36).slice(2, 9)}`;
+function randomId(prefix: string): string {
+  return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
 export interface EmployeeDraft {
@@ -44,11 +45,19 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
   const [cafeKitchenOk, setCafeKitchenOk] = useState(existing?.cafeKitchenOk ?? false);
   const [isTrainee, setIsTrainee] = useState(existing?.isTrainee ?? false);
 
-  const [avatarBase] = useState(existing?.avatarBase ?? randomAvatarBase);
+  const [avatarBase] = useState(() => existing?.avatarBase ?? randomId('avatar'));
   const [avatarGender, setAvatarGender] = useState<AvatarGender>(existing?.avatarGender ?? 'male');
   const [avatarTop, setAvatarTop] = useState(existing?.avatarTop ?? HAIR_STYLES_MALE[0].value);
   const [avatarSkinColor, setAvatarSkinColor] = useState(existing?.avatarSkinColor ?? SKIN_COLORS[0]);
   const [avatarGlasses, setAvatarGlasses] = useState(existing?.avatarGlasses ?? false);
+
+  // 新規雇用の場合のみ: 保存後にログインアカウントも作成できる(任意)
+  const [pendingId] = useState(() => existing?.id ?? randomId('emp'));
+  const [createAccount, setCreateAccount] = useState(false);
+  const [accountEmail, setAccountEmail] = useState('');
+  const [accountPassword, setAccountPassword] = useState('');
+  const [accountStatus, setAccountStatus] = useState<'idle' | 'saving' | 'done' | 'error'>('idle');
+  const [accountError, setAccountError] = useState<string | null>(null);
 
   const toggleCrossTrained = (facility: FacilityId) => {
     setCrossTrained((prev) =>
@@ -60,11 +69,12 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
     setDesiredDaysOff((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    onSave({
-      id: existing?.id,
+
+    await onSave({
+      id: existing?.id ?? pendingId,
       avatarBase,
       name: name.trim(),
       role,
@@ -82,6 +92,20 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
       avatarSkinColor,
       avatarGlasses,
     });
+
+    if (draft.mode === 'create' && createAccount && accountEmail.trim() && accountPassword.trim()) {
+      setAccountStatus('saving');
+      const { data, error } = await supabase.functions.invoke('create-employee-account', {
+        body: { employeeId: pendingId, email: accountEmail.trim(), password: accountPassword },
+      });
+      if (error || data?.error) {
+        setAccountStatus('error');
+        setAccountError(data?.error ?? error?.message ?? 'アカウント作成に失敗しました');
+        return; // 従業員データは保存済みなので、エラー表示のためモーダルは開いたままにする
+      }
+      setAccountStatus('done');
+    }
+
     onClose();
   };
 
@@ -279,6 +303,42 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
               className="w-full rounded-md border border-paper/20 bg-void px-3 py-2 text-sm text-paper focus:border-gold focus:outline-none"
             />
           </div>
+
+          {draft.mode === 'create' && (
+            <div className="rounded-lg border border-dashed border-gold/40 p-3">
+              <label className="flex items-center gap-2 text-xs text-paper-dim">
+                <input
+                  type="checkbox"
+                  checked={createAccount}
+                  onChange={(e) => setCreateAccount(e.target.checked)}
+                  className="h-3.5 w-3.5 accent-gold"
+                />
+                <KeyRound size={13} className="text-gold" />
+                ログインアカウントも作成する(任意)
+              </label>
+              {createAccount && (
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <input
+                    type="email"
+                    value={accountEmail}
+                    onChange={(e) => setAccountEmail(e.target.value)}
+                    placeholder="メールアドレス"
+                    required={createAccount}
+                    className="rounded-md border border-paper/20 bg-void px-2 py-1.5 text-sm text-paper focus:border-gold focus:outline-none"
+                  />
+                  <input
+                    type="text"
+                    value={accountPassword}
+                    onChange={(e) => setAccountPassword(e.target.value)}
+                    placeholder="初期パスワード"
+                    required={createAccount}
+                    className="rounded-md border border-paper/20 bg-void px-2 py-1.5 text-sm text-paper focus:border-gold focus:outline-none"
+                  />
+                </div>
+              )}
+              {accountStatus === 'error' && <p className="mt-2 text-[11px] text-seal-bright">{accountError}</p>}
+            </div>
+          )}
 
           <div className="flex items-center justify-between pt-1">
             {draft.mode === 'edit' && existing ? (

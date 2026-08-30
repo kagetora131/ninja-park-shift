@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { AlertTriangle, Pencil } from 'lucide-react';
 import { DateTabs } from './DateTabs';
-import { FACILITIES, FACILITY_ORDER } from '../data/facilities';
+import { FACILITY_ORDER } from '../data/facilities';
 import { formatDateJp, weekdayJp } from '../lib/format';
 import { bestProfitDay, longestRedStreak, totalsOf } from '../lib/finance';
 import { ShurikenIcon } from './ShurikenIcon';
+import { useLabelContext } from '../hooks/LabelContext';
 import type { FinanceDraft } from './FinanceEditModal';
 import type { DailyFinance } from '../types';
 
@@ -19,6 +20,7 @@ interface FinanceDashboardProps {
 }
 
 export function FinanceDashboard({ finance, onEditFacility }: FinanceDashboardProps) {
+  const { facilityName } = useLabelContext();
   const [selectedDate, setSelectedDate] = useState(finance[0]?.date ?? '');
   const totals = useMemo(() => totalsOf(finance), [finance]);
   const streak = useMemo(() => longestRedStreak(finance), [finance]);
@@ -124,7 +126,7 @@ export function FinanceDashboard({ finance, onEditFacility }: FinanceDashboardPr
               return (
                 <div key={facilityId} className="rounded-lg border border-paper/10 bg-void/40 p-3">
                   <div className="mb-2 flex items-center justify-between">
-                    <p className="text-xs font-medium text-paper">{FACILITIES[facilityId].name}</p>
+                    <p className="text-xs font-medium text-paper">{facilityName(facilityId)}</p>
                     <button
                       type="button"
                       onClick={() =>

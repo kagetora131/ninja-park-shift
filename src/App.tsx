@@ -1,25 +1,37 @@
 import { useMemo, useState } from 'react';
-import { ClipboardList, TableProperties, Users, Wallet } from 'lucide-react';
+import { CalendarDays, ClipboardList, Languages, TableProperties, UserCog, Users, Wallet } from 'lucide-react';
 import { Header } from './components/Header';
 import { TabNav, type TabDef } from './components/TabNav';
 import { ShiftBoard } from './components/ShiftBoard';
 import { StaffView } from './components/StaffView';
 import { FinanceDashboard } from './components/FinanceDashboard';
 import { PostRequirementEditor } from './components/PostRequirementEditor';
+import { LabelManagerView } from './components/LabelManagerView';
+import { MyShiftsView } from './components/MyShiftsView';
+import { MyPreferencesView } from './components/MyPreferencesView';
+import { LoginPage } from './components/LoginPage';
 import { ShiftEditModal, type ShiftDraft } from './components/ShiftEditModal';
 import { EmployeeEditModal, type EmployeeDraft } from './components/EmployeeEditModal';
 import { FinanceEditModal, type FinanceDraft } from './components/FinanceEditModal';
 import { useShiftStore } from './hooks/useShiftStore';
-import type { Employee, ShiftEntry } from './types';
+import { useAuth } from './hooks/useAuth';
+import { LabelProvider } from './hooks/LabelContext';
+import type { Employee, Profile, ShiftEntry } from './types';
 
-const TABS: TabDef[] = [
+const MANAGER_TABS: TabDef[] = [
   { id: 'board', label: 'シフト表', icon: TableProperties },
   { id: 'staff', label: 'スタッフ管理', icon: Users },
   { id: 'finance', label: '収支', icon: Wallet },
   { id: 'posts', label: '給与・ポスト設定', icon: ClipboardList },
+  { id: 'labels', label: '用語管理', icon: Languages },
 ];
 
-export default function App() {
+const EMPLOYEE_TABS: TabDef[] = [
+  { id: 'myShifts', label: 'マイシフト', icon: CalendarDays },
+  { id: 'myPreferences', label: '自分の設定', icon: UserCog },
+];
+
+function ManagerApp() {
   const {
     employees,
     finance,
@@ -36,7 +48,6 @@ export default function App() {
     updateTraineeHourlyWage,
     updateFulltimeMonthlySalary,
     updatePostRequirement,
-    resetToDummyData,
   } = useShiftStore();
   const [activeTab, setActiveTab] = useState('board');
   const [shiftDraft, setShiftDraft] = useState<ShiftDraft | null>(null);
@@ -69,26 +80,14 @@ export default function App() {
     }
   };
 
-  const handleReset = () => {
-    if (
-      window.confirm(
-        '編集した内容(シフト・スタッフ・売上・給与・ポスト設定)をすべて破棄して、初期のダミーデータに戻しますか？',
-      )
-    ) {
-      resetToDummyData();
-    }
-  };
-
   return (
-    <div className="min-h-screen pb-16">
-      <Header onReset={handleReset} />
-      <TabNav tabs={TABS} active={activeTab} onChange={setActiveTab} />
-
+    <>
+      <TabNav tabs={MANAGER_TABS} active={activeTab} onChange={setActiveTab} />
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         {activeTab === 'board' && (
           <ShiftBoard
             dates={dates}
-            selectedDate={selectedDate}
+            selectedDate={selectedDate || dates[0] || ''}
             onSelectDate={setSelectedDate}
             employees={employees}
             shifts={shifts}
@@ -105,9 +104,7 @@ export default function App() {
           <StaffView employees={employees} onEdit={handleEditEmployee} onCreate={handleCreateEmployee} />
         )}
 
-        {activeTab === 'finance' && (
-          <FinanceDashboard finance={finance} onEditFacility={setFinanceDraft} />
-        )}
+        {activeTab === 'finance' && <FinanceDashboard finance={finance} onEditFacility={setFinanceDraft} />}
 
         {activeTab === 'posts' && (
           <PostRequirementEditor
@@ -119,6 +116,8 @@ export default function App() {
             onChangePostRequirement={updatePostRequirement}
           />
         )}
+
+        {activeTab === 'labels' && <LabelManagerView />}
       </main>
 
       {shiftDraft && (
@@ -141,12 +140,89 @@ export default function App() {
       )}
 
       {financeDraft && (
-        <FinanceEditModal
-          draft={financeDraft}
-          onClose={() => setFinanceDraft(null)}
-          onSave={updateFacilityRevenue}
-        />
+        <FinanceEditModal draft={financeDraft} onClose={() => setFinanceDraft(null)} onSave={updateFacilityRevenue} />
       )}
-    </div>
+    </>
+  );
+}
+
+function EmployeeApp({ profile }: { profile: Profile }) {
+  const { employeeMap, shifts, moodMap, refetchEmployees } = useShiftStore();
+  const [activeTab, setActiveTab] = useState('myShifts');
+  const employee = profile.employeeId ? employeeMap.get(profile.employeeId) : undefined;
+
+  if (!employee) {
+    return (
+      <main className="mx-auto max-w-6xl px-4 py-10 text-center text-sm text-paper-dim">
+        アカウントに紐づく従業員データが見つかりません。マネージャーにお問い合わせください。
+      </main>
+    );
+  }
+
+  const myShifts = shifts.filter((s) => s.employeeId === employee.id);
+
+  return (
+    <>
+      <TabNav tabs={EMPLOYEE_TABS} active={activeTab} onChange={setActiveTab} />
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+        {activeTab === 'myShifts' && <MyShiftsView employee={employee} shifts={myShifts} moodMap={moodMap} />}
+        {activeTab === 'myPreferences' && (
+          <MyPreferencesView employee={employee} onSaved={refetchEmployees} />
+        )}
+      </main>
+    </>
+  );
+}
+
+export default function App() {
+  const { loading, isAuthenticated, session, profile, error, signIn, signOut } = useAuth();
+
+  return (
+    <AppShell
+      loading={loading}
+      isAuthenticated={isAuthenticated}
+      email={session?.user.email}
+      profile={profile}
+      error={error}
+      onSignIn={signIn}
+      onSignOut={signOut}
+    />
+  );
+}
+
+interface AppShellProps {
+  loading: boolean;
+  isAuthenticated: boolean;
+  email: string | undefined;
+  profile: Profile | null;
+  error: string | null;
+  onSignIn: (email: string, password: string) => Promise<boolean>;
+  onSignOut: () => void;
+}
+
+function AppShell({ loading, isAuthenticated, email, profile, error, onSignIn, onSignOut }: AppShellProps) {
+  if (loading) {
+    return <div className="flex min-h-screen items-center justify-center text-sm text-paper-dim">読み込み中...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage onSignIn={onSignIn} error={error} />;
+  }
+
+  if (!profile) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-paper-dim">
+        アカウント情報の取得に失敗しました。マネージャーにお問い合わせください。
+      </div>
+    );
+  }
+
+  return (
+    <LabelProvider>
+      <div className="min-h-screen pb-16">
+        <Header role={profile.role} email={email} onSignOut={onSignOut} />
+        {profile.role === 'manager' ? <ManagerApp /> : <EmployeeApp profile={profile} />}
+      </div>
+    </LabelProvider>
   );
 }

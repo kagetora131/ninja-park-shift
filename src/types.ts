@@ -93,3 +93,29 @@ export interface ShiftDataset {
   shifts: ShiftEntry[];
   financeRevenue: FinanceRevenueRow[];
 }
+
+/** ロールベース権限(RBAC)。 */
+export type UserRole = 'manager' | 'employee';
+
+export interface Profile {
+  id: string;
+  employeeId: string | null;
+  role: UserRole;
+}
+
+/** 表示言語。表記(labels)テーブルのキーとしても使う。 */
+export type Locale = 'ja' | 'en';
+
+export interface LabelValues {
+  ja: string;
+  en?: string;
+}
+
+export type LabelEntityType = 'employee' | 'facility' | 'role' | 'qualification';
+
+export interface LabelRow {
+  entityType: LabelEntityType;
+  entityId: string;
+  field: string;
+  values: LabelValues;
+}

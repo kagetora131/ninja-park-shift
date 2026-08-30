@@ -2,6 +2,7 @@ import { GripVertical } from 'lucide-react';
 import { NinjaAvatar } from './NinjaAvatar';
 import { FACILITIES, capableFacilities } from '../data/facilities';
 import { EMPLOYEE_DRAG_MIME } from '../lib/dragDrop';
+import { useLabelContext } from '../hooks/LabelContext';
 import type { Employee, ShiftEntry } from '../types';
 
 interface ShiftRosterPanelProps {
@@ -19,6 +20,7 @@ export function ShiftRosterPanel({
   onDragStartEmployee,
   onDragEndEmployee,
 }: ShiftRosterPanelProps) {
+  const { employeeName, facilityName } = useLabelContext();
   const shiftsByEmployeeId = new Map<string, ShiftEntry[]>();
   for (const shift of shiftsToday) {
     const list = shiftsByEmployeeId.get(shift.employeeId) ?? [];
@@ -58,7 +60,7 @@ export function ShiftRosterPanel({
             >
               <NinjaAvatar employee={employee} mood="neutral" size="sm" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-medium text-paper">{employee.name}</p>
+                <p className="truncate text-xs font-medium text-paper">{employeeName(employee)}</p>
                 <div className="mt-0.5 flex flex-wrap gap-1">
                   {capable.map((f) => (
                     <span
@@ -70,7 +72,7 @@ export function ShiftRosterPanel({
                           f === employee.mainFacility ? 'var(--color-gold)' : 'transparent',
                         border: f === employee.mainFacility ? 'none' : '1px solid var(--color-paper-dim)',
                       }}
-                      title={f === employee.mainFacility ? `所属: ${FACILITIES[f].name}` : `応援可: ${FACILITIES[f].name}`}
+                      title={f === employee.mainFacility ? `所属: ${facilityName(f)}` : `応援可: ${facilityName(f)}`}
                     >
                       {FACILITIES[f].shortName}
                     </span>

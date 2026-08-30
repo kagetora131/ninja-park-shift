@@ -1,6 +1,7 @@
 import { ArrowLeftRight, Frown, Meh, Moon, Smile } from 'lucide-react';
 import { generateNinjaAvatar } from '../lib/avatar';
-import { FACILITY_COLOR, FACILITIES } from '../data/facilities';
+import { FACILITY_COLOR } from '../data/facilities';
+import { useLabelContext } from '../hooks/LabelContext';
 import type { Employee, FacilityId, Mood } from '../types';
 
 const RING_COLOR: Record<Mood, string> = {
@@ -32,6 +33,7 @@ interface NinjaAvatarProps {
 }
 
 export function NinjaAvatar({ employee, mood, facility, size = 'md', title }: NinjaAvatarProps) {
+  const { employeeName, facilityName } = useLabelContext();
   const px = SIZE_PX[size];
   const dataUri = generateNinjaAvatar(employee.avatarBase, mood, {
     top: employee.avatarTop,
@@ -57,7 +59,7 @@ export function NinjaAvatar({ employee, mood, facility, size = 'md', title }: Ni
           className="h-full w-full overflow-hidden rounded-full"
           style={{ backgroundColor }}
         >
-          <img src={dataUri} alt={employee.name} width={px} height={px} className="h-full w-full" />
+          <img src={dataUri} alt={employeeName(employee)} width={px} height={px} className="h-full w-full" />
         </div>
 
         {/* 表情アイコンバッジ */}
@@ -77,7 +79,7 @@ export function NinjaAvatar({ employee, mood, facility, size = 'md', title }: Ni
           <div
             className="absolute left-0 top-0 flex items-center justify-center rounded-full border-2 border-void bg-void"
             style={{ width: px * 0.34, height: px * 0.34 }}
-            title={`本来は${FACILITIES[employee.mainFacility].name}所属`}
+            title={`本来は${facilityName(employee.mainFacility)}所属`}
           >
             <ArrowLeftRight size={px * 0.2} strokeWidth={2.5} color="var(--color-gold)" />
           </div>

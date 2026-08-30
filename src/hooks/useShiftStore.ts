@@ -1,9 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { loadInitialDataset } from '../data/normalize';
-import { DEFAULT_WAGE_SETTINGS } from '../data/constants';
+import { supabase } from '../lib/supabaseClient';
 import { computeMoodMap } from '../lib/mood';
 import { weekdayJp } from '../lib/format';
 import { computeDailyFinance } from '../lib/finance';
+import {
+  mapEmployeeRow,
+  mapFinanceRevenueRow,
+  mapPostRequirementRows,
+  mapShiftRow,
+  mapWageSettingsRow,
+  type EmployeeRow,
+  type FinanceRevenueRowDb,
+  type PostRequirementRow,
+  type ShiftRow,
+  type WageSettingsRow,
+} from '../data/supabaseMappers';
 import type {
   AvatarGender,
   Employee,
@@ -14,30 +25,6 @@ import type {
   ShiftEntry,
   WageSettings,
 } from '../types';
-
-const SHIFT_KEY = 'ninja-park-shift:shifts:v1';
-const EMPLOYEE_KEY = 'ninja-park-shift:employees:v1';
-const FINANCE_REVENUE_KEY = 'ninja-park-shift:finance-revenue:v1';
-const WAGE_SETTINGS_KEY = 'ninja-park-shift:wage-settings:v1';
-const POST_REQUIREMENTS_KEY = 'ninja-park-shift:post-requirements:v1';
-
-function loadStored<T>(key: string): T | null {
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return null;
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
-}
-
-function saveStored<T>(key: string, value: T) {
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // localStorage が使えない環境(プライベートモード等)では保存をあきらめる
-  }
-}
 
 export interface NewShiftInput {
   date: string;
@@ -80,145 +67,197 @@ function generateId(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export function useShiftStore() {
-  const initial = useMemo(() => loadInitialDataset(), []);
-  const [employees, setEmployees] = useState<Employee[]>(
-    () => loadStored<Employee[]>(EMPLOYEE_KEY) ?? initial.employees,
-  );
-  const [financeRevenue, setFinanceRevenue] = useState<FinanceRevenueRow[]>(
-    () => loadStored<FinanceRevenueRow[]>(FINANCE_REVENUE_KEY) ?? initial.financeRevenue,
-  );
-  const [shifts, setShifts] = useState<ShiftEntry[]>(
-    () => loadStored<ShiftEntry[]>(SHIFT_KEY) ?? initial.shifts,
-  );
-  const [wageSettings, setWageSettings] = useState<WageSettings>(
-    () => loadStored<WageSettings>(WAGE_SETTINGS_KEY) ?? DEFAULT_WAGE_SETTINGS,
-  );
-  const [postRequirements, setPostRequirements] = useState<PostRequirements>(
-    () => loadStored<PostRequirements>(POST_REQUIREMENTS_KEY) ?? {},
-  );
+const DEFAULT_WAGE_SETTINGS: WageSettings = {
+  facilityRates: { goods: 1200, amuse: 2200, cafe: 1200 },
+  traineeHourlyWage: 1500,
+  fulltimeMonthlySalary: 280000,
+};
 
-  // 永続化はstateの変化を監視するeffectだけで行う(state更新関数の中でI/Oをすると、
-  // React StrictModeの二重呼び出しでID生成などの非純粋な処理が2回走り、
-  // localStorageとReact stateが食い違う不具合になるため)。
-  useEffect(() => saveStored(SHIFT_KEY, shifts), [shifts]);
-  useEffect(() => saveStored(EMPLOYEE_KEY, employees), [employees]);
-  useEffect(() => saveStored(FINANCE_REVENUE_KEY, financeRevenue), [financeRevenue]);
-  useEffect(() => saveStored(WAGE_SETTINGS_KEY, wageSettings), [wageSettings]);
-  useEffect(() => saveStored(POST_REQUIREMENTS_KEY, postRequirements), [postRequirements]);
+/**
+ * Supabase(共有DB)を情報源とするシフト・従業員・売上・給与設定・ポスト設定のストア。
+ * どのテーブルもRLSで行が絞られるため、ロールに応じたフィルタリングはDB側に任せ、
+ * ここでは「取得できたものをそのまま state にする」だけでよい。
+ */
+export function useShiftStore() {
+  const [loading, setLoading] = useState(true);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [shifts, setShifts] = useState<ShiftEntry[]>([]);
+  const [financeRevenue, setFinanceRevenue] = useState<FinanceRevenueRow[]>([]);
+  const [wageSettings, setWageSettings] = useState<WageSettings>(DEFAULT_WAGE_SETTINGS);
+  const [postRequirements, setPostRequirements] = useState<PostRequirements>({});
+
+  const refetchEmployees = useCallback(async () => {
+    const { data } = await supabase.from('employees').select('*').order('id');
+    setEmployees(((data as EmployeeRow[]) ?? []).map(mapEmployeeRow));
+  }, []);
+
+  const refetchShifts = useCallback(async () => {
+    const { data } = await supabase.from('shifts').select('*').order('date');
+    setShifts(((data as ShiftRow[]) ?? []).map(mapShiftRow));
+  }, []);
+
+  const refetchFinance = useCallback(async () => {
+    const { data } = await supabase.from('finance_revenue').select('*').order('date');
+    setFinanceRevenue(((data as FinanceRevenueRowDb[]) ?? []).map(mapFinanceRevenueRow));
+  }, []);
+
+  const refetchWageSettings = useCallback(async () => {
+    const { data } = await supabase.from('wage_settings').select('*').eq('id', 1).maybeSingle();
+    if (data) setWageSettings(mapWageSettingsRow(data as WageSettingsRow));
+  }, []);
+
+  const refetchPostRequirements = useCallback(async () => {
+    const { data } = await supabase.from('post_requirements').select('*');
+    setPostRequirements(mapPostRequirementRows((data as PostRequirementRow[]) ?? []));
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      await Promise.all([
+        refetchEmployees(),
+        refetchShifts(),
+        refetchFinance(),
+        refetchWageSettings(),
+        refetchPostRequirements(),
+      ]);
+      setLoading(false);
+    })();
+  }, [refetchEmployees, refetchShifts, refetchFinance, refetchWageSettings, refetchPostRequirements]);
+
+  const employeeMap = useMemo(() => new Map(employees.map((e) => [e.id, e])), [employees]);
 
   const moodMap: Map<string, MoodResult> = useMemo(
     () => computeMoodMap(employees, shifts),
     [employees, shifts],
   );
 
-  const employeeMap = useMemo(() => new Map(employees.map((e) => [e.id, e])), [employees]);
-
-  // 人件費はシフト+給与設定から自動計算するため、売上データを保存するたびに再計算する。
   const finance = useMemo(
     () => financeRevenue.map((row) => computeDailyFinance(row, shifts, employeeMap, wageSettings)),
     [financeRevenue, shifts, employeeMap, wageSettings],
   );
 
-  const upsertShift = useCallback((input: NewShiftInput) => {
-    setShifts((prev) => {
+  const upsertShift = useCallback(
+    async (input: NewShiftInput) => {
       const id = `${input.date}_${input.employeeId}`;
-      const actualHours = computeActualHours(input.start, input.end, input.breakMinutes);
-      const next: ShiftEntry = {
+      const [sh, sm] = input.start.split(':').map(Number);
+      const [eh, em] = input.end.split(':').map(Number);
+      const worked = Math.max(0, eh * 60 + em - (sh * 60 + sm) - input.breakMinutes);
+      const actualHours = Math.round((worked / 60) * 10) / 10;
+
+      await supabase.from('shifts').upsert({
         id,
         date: input.date,
         day: weekdayJp(input.date),
-        employeeId: input.employeeId,
+        employee_id: input.employeeId,
         facility: input.facility,
         start: input.start,
         end: input.end,
-        breakMinutes: input.breakMinutes,
-        actualHours,
-        isDesired: input.isDesired,
-        note: input.note,
-      };
-      const filtered = prev.filter((s) => s.id !== id);
-      return [...filtered, next];
-    });
-  }, []);
+        break_minutes: input.breakMinutes,
+        actual_hours: actualHours,
+        is_desired: input.isDesired,
+        note: input.note ?? null,
+      });
+      await refetchShifts();
+    },
+    [refetchShifts],
+  );
 
-  const removeShift = useCallback((id: string) => {
-    setShifts((prev) => prev.filter((s) => s.id !== id));
-  }, []);
+  const removeShift = useCallback(
+    async (id: string) => {
+      await supabase.from('shifts').delete().eq('id', id);
+      await refetchShifts();
+    },
+    [refetchShifts],
+  );
 
-  const upsertEmployee = useCallback((input: EmployeeInput) => {
-    setEmployees((prev) => {
-      const existing = input.id ? prev.find((e) => e.id === input.id) : undefined;
-      const employee: Employee = {
-        id: existing?.id ?? generateId('emp'),
+  const upsertEmployee = useCallback(
+    async (input: EmployeeInput) => {
+      const existing = input.id ? employeeMap.get(input.id) : undefined;
+      const id = existing?.id ?? input.id ?? generateId('emp');
+      const avatarBase = existing?.avatarBase ?? input.avatarBase ?? generateId('avatar');
+
+      await supabase.from('employees').upsert({
+        id,
         name: input.name,
         role: input.role,
-        mainFacility: input.mainFacility,
-        crossTrained: input.crossTrained,
-        avatarBase: existing?.avatarBase ?? input.avatarBase ?? generateId('avatar'),
-        desiredWorkDaysPerWeek: input.desiredWorkDaysPerWeek,
-        desiredDaysOff: input.desiredDaysOff,
-        maxConsecutiveDays: input.maxConsecutiveDays,
+        main_facility: input.mainFacility,
+        cross_trained: input.crossTrained,
+        avatar_base: avatarBase,
+        desired_work_days_per_week: input.desiredWorkDaysPerWeek,
+        desired_days_off: input.desiredDaysOff,
+        max_consecutive_days: input.maxConsecutiveDays,
         qualifications: input.qualifications,
-        employmentType: input.employmentType,
-        cafeKitchenOk: input.cafeKitchenOk,
-        isTrainee: input.isTrainee,
-        avatarGender: input.avatarGender,
-        avatarTop: input.avatarTop,
-        avatarSkinColor: input.avatarSkinColor,
-        avatarGlasses: input.avatarGlasses,
-      };
-      return existing
-        ? prev.map((e) => (e.id === employee.id ? employee : e))
-        : [...prev, employee];
-    });
-  }, []);
+        employment_type: input.employmentType ?? null,
+        cafe_kitchen_ok: input.cafeKitchenOk ?? null,
+        is_trainee: input.isTrainee ?? false,
+        avatar_gender: input.avatarGender ?? null,
+        avatar_top: input.avatarTop ?? null,
+        avatar_skin_color: input.avatarSkinColor ?? null,
+        avatar_glasses: input.avatarGlasses ?? null,
+      });
+      await refetchEmployees();
+    },
+    [employeeMap, refetchEmployees],
+  );
 
-  const removeEmployee = useCallback((id: string) => {
-    setEmployees((prev) => prev.filter((e) => e.id !== id));
-    setShifts((prev) => prev.filter((s) => s.employeeId !== id));
-  }, []);
+  const removeEmployee = useCallback(
+    async (id: string) => {
+      await supabase.from('employees').delete().eq('id', id);
+      await Promise.all([refetchEmployees(), refetchShifts()]);
+    },
+    [refetchEmployees, refetchShifts],
+  );
 
-  const updateFacilityRevenue = useCallback((input: FinanceInput) => {
-    setFinanceRevenue((prev) =>
-      prev.map((row) =>
-        row.date === input.date
-          ? { ...row, facilityRevenue: { ...row.facilityRevenue, [input.facility]: input.revenue } }
-          : row,
-      ),
-    );
-  }, []);
+  const updateFacilityRevenue = useCallback(
+    async (input: FinanceInput) => {
+      const row = financeRevenue.find((f) => f.date === input.date);
+      if (!row) return;
+      const facilityRevenue = { ...row.facilityRevenue, [input.facility]: input.revenue };
+      await supabase.from('finance_revenue').update({ facility_revenue: facilityRevenue }).eq('date', input.date);
+      await refetchFinance();
+    },
+    [financeRevenue, refetchFinance],
+  );
 
-  const updateFacilityRate = useCallback((facility: FacilityId, value: number) => {
-    setWageSettings((prev) => ({ ...prev, facilityRates: { ...prev.facilityRates, [facility]: value } }));
-  }, []);
+  const updateFacilityRate = useCallback(
+    async (facility: FacilityId, value: number) => {
+      const facilityRates = { ...wageSettings.facilityRates, [facility]: value };
+      await supabase.from('wage_settings').update({ facility_rates: facilityRates }).eq('id', 1);
+      await refetchWageSettings();
+    },
+    [wageSettings, refetchWageSettings],
+  );
 
-  const updateTraineeHourlyWage = useCallback((value: number) => {
-    setWageSettings((prev) => ({ ...prev, traineeHourlyWage: value }));
-  }, []);
+  const updateTraineeHourlyWage = useCallback(
+    async (value: number) => {
+      await supabase.from('wage_settings').update({ trainee_hourly_wage: value }).eq('id', 1);
+      await refetchWageSettings();
+    },
+    [refetchWageSettings],
+  );
 
-  const updateFulltimeMonthlySalary = useCallback((value: number) => {
-    setWageSettings((prev) => ({ ...prev, fulltimeMonthlySalary: value }));
-  }, []);
+  const updateFulltimeMonthlySalary = useCallback(
+    async (value: number) => {
+      await supabase.from('wage_settings').update({ fulltime_monthly_salary: value }).eq('id', 1);
+      await refetchWageSettings();
+    },
+    [refetchWageSettings],
+  );
 
-  const updatePostRequirement = useCallback((weekday: string, facility: FacilityId, value: number | null) => {
-    setPostRequirements((prev) => ({
-      ...prev,
-      [weekday]: { ...prev[weekday], [facility]: value },
-    }));
-  }, []);
-
-  const resetToDummyData = useCallback(() => {
-    setShifts(initial.shifts);
-    setEmployees(initial.employees);
-    setFinanceRevenue(initial.financeRevenue);
-    setWageSettings(DEFAULT_WAGE_SETTINGS);
-    setPostRequirements({});
-  }, [initial.shifts, initial.employees, initial.financeRevenue]);
+  const updatePostRequirement = useCallback(
+    async (weekday: string, facility: FacilityId, value: number | null) => {
+      await supabase.from('post_requirements').upsert({ weekday, facility, required: value });
+      await refetchPostRequirements();
+    },
+    [refetchPostRequirements],
+  );
 
   return {
+    loading,
     employees,
     employeeMap,
+    refetchEmployees,
     finance,
     shifts,
     moodMap,
@@ -233,15 +272,5 @@ export function useShiftStore() {
     updateTraineeHourlyWage,
     updateFulltimeMonthlySalary,
     updatePostRequirement,
-    resetToDummyData,
   };
-}
-
-function computeActualHours(start: string, end: string, breakMinutes: number): number {
-  const [sh, sm] = start.split(':').map(Number);
-  const [eh, em] = end.split(':').map(Number);
-  const startMinutes = sh * 60 + sm;
-  const endMinutes = eh * 60 + em;
-  const worked = Math.max(0, endMinutes - startMinutes - breakMinutes);
-  return Math.round((worked / 60) * 10) / 10;
 }
