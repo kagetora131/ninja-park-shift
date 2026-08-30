@@ -16,7 +16,6 @@ import { FinanceEditModal, type FinanceDraft } from './components/FinanceEditMod
 import { useShiftStore } from './hooks/useShiftStore';
 import { useAuth } from './hooks/useAuth';
 import { LabelProvider } from './hooks/LabelContext';
-import { CALENDAR_DATES } from './data/calendarRange';
 import type { Employee, Profile, ShiftEntry } from './types';
 
 const MANAGER_TABS: TabDef[] = [
@@ -55,9 +54,6 @@ function ManagerApp() {
   const [employeeDraft, setEmployeeDraft] = useState<EmployeeDraft | null>(null);
   const [financeDraft, setFinanceDraft] = useState<FinanceDraft | null>(null);
 
-  const dates = CALENDAR_DATES;
-  const [selectedDate, setSelectedDate] = useState(dates[0] ?? '');
-
   const handleEditShift = (shift: ShiftEntry) => {
     setShiftDraft({ mode: 'edit', date: shift.date, facility: shift.facility, existingShift: shift });
   };
@@ -87,17 +83,12 @@ function ManagerApp() {
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         {activeTab === 'board' && (
           <ShiftBoard
-            dates={dates}
-            selectedDate={selectedDate || dates[0] || ''}
-            onSelectDate={setSelectedDate}
             employees={employees}
             shifts={shifts}
             moodMap={moodMap}
             finance={finance}
-            postRequirements={postRequirements}
             onEditShift={handleEditShift}
-            onAssignShift={upsertShift}
-            onRemoveShift={removeShift}
+            onCreateShift={setShiftDraft}
           />
         )}
 
@@ -165,7 +156,7 @@ function EmployeeApp({ profile }: { profile: Profile }) {
       <TabNav tabs={EMPLOYEE_TABS} active={activeTab} onChange={setActiveTab} />
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         {activeTab === 'myShifts' && (
-          <MyShiftsView employee={employee} employees={employees} shifts={shifts} moodMap={moodMap} dates={CALENDAR_DATES} />
+          <MyShiftsView employee={employee} employees={employees} shifts={shifts} moodMap={moodMap} />
         )}
         {activeTab === 'myPreferences' && (
           <MyPreferencesView employee={employee} onSaved={refetchEmployees} />

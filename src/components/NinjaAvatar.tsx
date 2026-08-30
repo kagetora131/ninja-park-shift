@@ -1,15 +1,9 @@
 import { ArrowLeftRight, Frown, Meh, Moon, Smile } from 'lucide-react';
 import { generateNinjaAvatar } from '../lib/avatar';
 import { FACILITY_COLOR } from '../data/facilities';
+import { MOOD_COLOR } from '../lib/mood';
 import { useLabelContext } from '../hooks/LabelContext';
 import type { Employee, FacilityId, Mood } from '../types';
-
-const RING_COLOR: Record<Mood, string> = {
-  happy: 'var(--color-jade)',
-  neutral: 'var(--color-paper-dim)',
-  tired: 'var(--color-gold)',
-  unhappy: 'var(--color-seal)',
-};
 
 const MOOD_ICON: Record<Mood, typeof Smile> = {
   happy: Smile,
@@ -51,7 +45,7 @@ export function NinjaAvatar({ employee, mood, facility, size = 'md', title }: Ni
         style={{
           width: px,
           height: px,
-          boxShadow: `0 0 0 3px ${RING_COLOR[mood]}, 0 0 14px 1px ${RING_COLOR[mood]}55`,
+          boxShadow: `0 0 0 3px ${MOOD_COLOR[mood]}, 0 0 14px 1px ${MOOD_COLOR[mood]}55`,
         }}
         title={title}
       >
@@ -68,7 +62,7 @@ export function NinjaAvatar({ employee, mood, facility, size = 'md', title }: Ni
           style={{
             width: px * 0.36,
             height: px * 0.36,
-            background: RING_COLOR[mood],
+            background: MOOD_COLOR[mood],
           }}
         >
           <MoodIcon size={px * 0.22} strokeWidth={2.5} color="#0a0d12" />

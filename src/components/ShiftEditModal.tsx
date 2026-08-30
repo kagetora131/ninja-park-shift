@@ -10,6 +10,7 @@ export interface ShiftDraft {
   mode: 'create' | 'edit';
   date: string;
   facility: FacilityId;
+  employeeId?: string;
   existingShift?: ShiftEntry;
 }
 
@@ -23,7 +24,7 @@ interface ShiftEditModalProps {
 
 export function ShiftEditModal({ draft, employees, onClose, onSave, onDelete }: ShiftEditModalProps) {
   const existing = draft.existingShift;
-  const [employeeId, setEmployeeId] = useState(existing?.employeeId ?? employees[0]?.id ?? '');
+  const [employeeId, setEmployeeId] = useState(existing?.employeeId ?? draft.employeeId ?? employees[0]?.id ?? '');
   const [facility, setFacility] = useState<FacilityId>(draft.facility);
   const [start, setStart] = useState(existing?.start ?? SHIFT_PATTERNS[draft.facility][0].start);
   const [end, setEnd] = useState(existing?.end ?? SHIFT_PATTERNS[draft.facility][0].end);

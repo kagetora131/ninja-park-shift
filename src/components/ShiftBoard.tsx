@@ -1,229 +1,162 @@
 import { useState } from 'react';
-import { TrendingDown, TrendingUp, X } from 'lucide-react';
-import { NinjaAvatar } from './NinjaAvatar';
-import { DatePicker } from './DatePicker';
-import { CoverageStrip } from './CoverageStrip';
-import { ShiftRosterPanel } from './ShiftRosterPanel';
-import { FACILITY_ORDER, capableFacilities } from '../data/facilities';
-import { SHIFT_PATTERNS } from '../data/shiftPatterns';
-import { formatYen, weekdayJp } from '../lib/format';
-import { MOOD_LABEL } from '../lib/mood';
-import { EMPLOYEE_DRAG_MIME } from '../lib/dragDrop';
-import { useAutoScrollOnDrag } from '../hooks/useAutoScrollOnDrag';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { FACILITY_COLOR, FACILITY_ORDER } from '../data/facilities';
+import { formatDateJp, weekdayJp } from '../lib/format';
+import { MOOD_COLOR } from '../lib/mood';
+import {
+  CALENDAR_END_MONTH,
+  CALENDAR_END_YEAR,
+  CALENDAR_START_MONTH,
+  CALENDAR_START_YEAR,
+  addMonths,
+  datesInMonth,
+} from '../lib/monthGrid';
 import { useLabelContext } from '../hooks/LabelContext';
-import type { NewShiftInput } from '../hooks/useShiftStore';
-import type { DailyFinance, Employee, FacilityId, MoodResult, PostRequirements, ShiftEntry } from '../types';
+import type { ShiftDraft } from './ShiftEditModal';
+import type { DailyFinance, Employee, MoodResult, ShiftEntry } from '../types';
 
 interface ShiftBoardProps {
-  dates: string[];
-  selectedDate: string;
-  onSelectDate: (date: string) => void;
   employees: Employee[];
   shifts: ShiftEntry[];
   moodMap: Map<string, MoodResult>;
   finance: DailyFinance[];
-  postRequirements: PostRequirements;
   onEditShift: (shift: ShiftEntry) => void;
-  onAssignShift: (input: NewShiftInput) => void;
-  onRemoveShift: (id: string) => void;
+  onCreateShift: (draft: ShiftDraft) => void;
 }
 
-export function ShiftBoard({
-  dates,
-  selectedDate,
-  onSelectDate,
-  employees,
-  shifts,
-  moodMap,
-  finance,
-  postRequirements,
-  onEditShift,
-  onAssignShift,
-  onRemoveShift,
-}: ShiftBoardProps) {
-  useAutoScrollOnDrag();
+export function ShiftBoard({ employees, shifts, moodMap, finance, onEditShift, onCreateShift }: ShiftBoardProps) {
   const { employeeName, facilityName } = useLabelContext();
-  const [draggingEmployeeId, setDraggingEmployeeId] = useState<string | null>(null);
-  const [dragOverFacility, setDragOverFacility] = useState<FacilityId | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [view, setView] = useState({ year: CALENDAR_START_YEAR, month: CALENDAR_START_MONTH });
 
-  const employeeMap = new Map(employees.map((e) => [e.id, e]));
-  const shiftsForDate = shifts.filter((s) => s.date === selectedDate);
-  const selectedDay = weekdayJp(selectedDate);
-  const todayFinance = finance.find((f) => f.date === selectedDate);
-  const draggingEmployee = draggingEmployeeId ? employeeMap.get(draggingEmployeeId) : null;
+  const dates = datesInMonth(view.year, view.month);
 
-  const showNotice = (message: string) => {
-    setNotice(message);
-    window.setTimeout(() => setNotice((n) => (n === message ? null : n)), 3200);
-  };
+  const sortedEmployees = [...employees].sort((a, b) => {
+    const fa = FACILITY_ORDER.indexOf(a.mainFacility);
+    const fb = FACILITY_ORDER.indexOf(b.mainFacility);
+    return fa - fb || a.name.localeCompare(b.name, 'ja');
+  });
 
-  const handleDrop = (facility: FacilityId, e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOverFacility(null);
-    const employeeId = e.dataTransfer.getData(EMPLOYEE_DRAG_MIME);
-    setDraggingEmployeeId(null);
-    const employee = employeeMap.get(employeeId);
-    if (!employee) return;
+  const shiftByKey = new Map<string, ShiftEntry>();
+  for (const s of shifts) shiftByKey.set(`${s.date}_${s.employeeId}`, s);
 
-    const existing = shifts.find((s) => s.employeeId === employeeId && s.date === selectedDate);
-    const pattern = SHIFT_PATTERNS[facility][0];
-    onAssignShift({
-      date: selectedDate,
-      employeeId,
-      facility,
-      start: existing?.start ?? pattern.start,
-      end: existing?.end ?? pattern.end,
-      breakMinutes: existing?.breakMinutes ?? pattern.breakMinutes,
-      isDesired: existing?.isDesired ?? true,
-      note: existing?.facility === facility ? existing.note : undefined,
-    });
+  const financeByDate = new Map(finance.map((f) => [f.date, f]));
+  const blackDaysInView = dates.filter((d) => financeByDate.get(d)?.isBlack).length;
 
-    if (!capableFacilities(employee).includes(facility)) {
-      showNotice(`${employeeName(employee)}は${facilityName(facility)}が未経験です。無理のないシフトか確認しましょう。`);
-    }
-  };
+  const goMonth = (delta: number) => setView((v) => addMonths(v.year, v.month, delta));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <DatePicker
-          dates={dates}
-          value={selectedDate}
-          onChange={onSelectDate}
-          dotColorFor={(date) => {
-            const f = finance.find((day) => day.date === date);
-            return f?.isBlack ? 'var(--color-jade)' : 'var(--color-seal)';
-          }}
-        />
-        {todayFinance && (
-          <div
-            className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs ${
-              todayFinance.isBlack
-                ? 'border-jade/60 bg-jade/10 text-jade'
-                : 'border-seal/60 bg-seal/10 text-seal-bright'
-            }`}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => goMonth(-1)}
+            disabled={view.year === CALENDAR_START_YEAR && view.month === CALENDAR_START_MONTH}
+            className="rounded-full border border-paper/20 p-1.5 text-paper-dim transition hover:border-gold hover:text-gold disabled:opacity-30"
           >
-            {todayFinance.isBlack ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-            本日{todayFinance.isBlack ? '黒字' : '赤字'}見込み：{formatYen(todayFinance.profit)}
-          </div>
-        )}
+            <ChevronLeft size={16} />
+          </button>
+          <p className="font-mincho text-base font-bold text-paper">
+            {view.year}年{view.month}月
+          </p>
+          <button
+            type="button"
+            onClick={() => goMonth(1)}
+            disabled={view.year === CALENDAR_END_YEAR && view.month === CALENDAR_END_MONTH}
+            className="rounded-full border border-paper/20 p-1.5 text-paper-dim transition hover:border-gold hover:text-gold disabled:opacity-30"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+        <div className="flex items-center gap-2 rounded-full border border-jade/40 bg-jade/10 px-3 py-1.5 text-xs text-jade">
+          今月の黒字日数：{blackDaysInView} / {dates.length}日
+        </div>
       </div>
 
-      {notice && (
-        <div className="animate-rise rounded-lg border border-gold/50 bg-gold/10 px-4 py-2 text-xs text-gold">
-          {notice}
-        </div>
-      )}
-
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-        <ShiftRosterPanel
-          employees={employees}
-          day={selectedDay}
-          shiftsToday={shiftsForDate}
-          onDragStartEmployee={setDraggingEmployeeId}
-          onDragEndEmployee={() => {
-            setDraggingEmployeeId(null);
-            setDragOverFacility(null);
-          }}
-        />
-
-        <div className="grid flex-1 gap-3 sm:grid-cols-3">
-          {FACILITY_ORDER.map((facility) => {
-            const facilityShifts = shiftsForDate
-              .filter((s) => s.facility === facility)
-              .sort((a, b) => a.start.localeCompare(b.start));
-            const required = postRequirements[selectedDay]?.[facility];
-            const isUnderStaffed = required != null && facilityShifts.length < required;
-
-            const isDropTargetKnown = !!draggingEmployee;
-            const isMain = draggingEmployee?.mainFacility === facility;
-            const isCrossTrained = draggingEmployee?.crossTrained.includes(facility) ?? false;
-            const isUnfamiliar = isDropTargetKnown && !isMain && !isCrossTrained;
-
-            let ringClass = 'border-paper/10';
-            if (isDropTargetKnown) {
-              if (isMain) ringClass = 'border-gold';
-              else if (isCrossTrained) ringClass = 'border-jade';
-              else if (isUnfamiliar) ringClass = 'border-seal/70 border-dashed';
-            }
-            if (dragOverFacility === facility) ringClass += ' bg-void/60 shadow-[0_0_0_2px_var(--color-gold)]';
-
-            return (
-              <div
-                key={facility}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOverFacility(facility);
-                }}
-                onDragLeave={() => setDragOverFacility((f) => (f === facility ? null : f))}
-                onDrop={(e) => handleDrop(facility, e)}
-                className={`flex flex-col rounded-xl border-2 bg-void-soft/50 p-3 transition-colors ${ringClass}`}
-              >
-                <div className="mb-2 flex items-center justify-between">
-                  <h3 className="font-mincho text-sm font-bold text-paper">{facilityName(facility)}</h3>
-                  <span className={`text-[11px] ${isUnderStaffed ? 'font-medium text-seal-bright' : 'text-paper-dim'}`}>
-                    {facilityShifts.length}
-                    {required != null ? ` / ${required}` : ''}名
-                  </span>
-                </div>
-
-                <CoverageStrip facilityShifts={facilityShifts} required={required} />
-
-                <div className="min-h-[80px] flex-1 space-y-2">
-                  {facilityShifts.length === 0 && (
-                    <p className="rounded-lg border border-dashed border-paper/15 py-6 text-center text-xs text-paper-dim/70">
-                      ここに忍者をドロップ
-                    </p>
-                  )}
-                  {facilityShifts.map((shift) => {
-                    const employee = employeeMap.get(shift.employeeId);
-                    if (!employee) return null;
+      <div className="max-h-[70vh] overflow-auto rounded-xl border border-paper/10">
+        <table className="border-collapse text-xs">
+          <thead>
+            <tr>
+              <th className="sticky left-0 top-0 z-30 min-w-[92px] border-b border-r border-paper/10 bg-void-soft px-2 py-2 text-left font-medium text-paper-dim">
+                日付
+              </th>
+              {sortedEmployees.map((emp) => (
+                <th
+                  key={emp.id}
+                  className="sticky top-0 z-20 min-w-[80px] border-b border-r border-paper/10 bg-void-soft px-1 py-2 text-center font-medium"
+                  style={{ borderTop: `3px solid ${FACILITY_COLOR[emp.mainFacility]}` }}
+                  title={`${employeeName(emp)}(${facilityName(emp.mainFacility)}所属)`}
+                >
+                  <span className="block max-w-[76px] truncate text-paper">{employeeName(emp)}</span>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {dates.map((date) => {
+              const dayFinance = financeByDate.get(date);
+              const day = weekdayJp(date);
+              return (
+                <tr key={date} className="odd:bg-void/30">
+                  <td className="sticky left-0 z-10 whitespace-nowrap border-b border-r border-paper/10 bg-void-soft px-2 py-1 text-paper-dim">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${dayFinance?.isBlack ? 'bg-jade' : 'bg-seal'}`}
+                      />
+                      {formatDateJp(date, day)}
+                    </div>
+                  </td>
+                  {sortedEmployees.map((emp) => {
+                    const shift = shiftByKey.get(`${date}_${emp.id}`);
+                    if (!shift) {
+                      return (
+                        <td key={emp.id} className="border-b border-r border-paper/5 p-0.5">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onCreateShift({ mode: 'create', date, facility: emp.mainFacility, employeeId: emp.id })
+                            }
+                            className="flex h-9 w-full items-center justify-center rounded-sm border border-dashed border-paper/10 text-paper-dim/0 transition hover:border-gold/50 hover:text-gold"
+                          >
+                            <Plus size={11} />
+                          </button>
+                        </td>
+                      );
+                    }
                     const mood = moodMap.get(shift.id);
                     return (
-                      <div
-                        key={shift.id}
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData(EMPLOYEE_DRAG_MIME, employee.id);
-                          e.dataTransfer.effectAllowed = 'move';
-                          setDraggingEmployeeId(employee.id);
-                        }}
-                        onDragEnd={() => {
-                          setDraggingEmployeeId(null);
-                          setDragOverFacility(null);
-                        }}
-                        onClick={() => onEditShift(shift)}
-                        title={mood?.reasons.join(' / ')}
-                        className="flex cursor-grab items-center gap-2 rounded-lg border border-paper/15 bg-void/50 p-1.5 pr-2 text-left transition active:cursor-grabbing hover:border-gold"
-                      >
-                        <NinjaAvatar employee={employee} mood={mood?.mood ?? 'neutral'} facility={facility} size="sm" />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-medium text-paper">{employeeName(employee)}</p>
-                          <p className="text-[10px] text-paper-dim">
-                            {shift.start}–{shift.end} ・{mood ? MOOD_LABEL[mood.mood] : ''}
-                          </p>
-                        </div>
+                      <td key={emp.id} className="border-b border-r border-paper/5 p-0.5">
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRemoveShift(shift.id);
-                          }}
-                          title="配置を解除"
-                          className="shrink-0 rounded-full p-1 text-paper-dim transition hover:bg-seal/20 hover:text-seal-bright"
+                          onClick={() => onEditShift(shift)}
+                          title={`${facilityName(shift.facility)} ${shift.start}–${shift.end}${
+                            mood ? ` / ${mood.reasons.join(' / ')}` : ''
+                          }`}
+                          className="relative flex h-9 w-full flex-col items-center justify-center gap-0.5 rounded-sm border-l-4 bg-void/60 transition hover:brightness-125"
+                          style={{ borderLeftColor: FACILITY_COLOR[shift.facility] }}
                         >
-                          <X size={12} />
+                          <span className="leading-none text-paper">{shift.start}</span>
+                          <span className="leading-none text-paper-dim">{shift.end}</span>
+                          {mood && (
+                            <span
+                              className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full"
+                              style={{ background: MOOD_COLOR[mood.mood] }}
+                            />
+                          )}
                         </button>
-                      </div>
+                      </td>
                     );
                   })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
+
+      <p className="text-[11px] text-paper-dim">
+        セルをクリックしてシフトを追加・編集できます。左のカラーバーは配置施設、右上のドットは表情(緑=上機嫌／灰=普通／金=疲れ気味／朱=不満)を表します。
+      </p>
     </div>
   );
 }

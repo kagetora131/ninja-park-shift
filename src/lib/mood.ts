@@ -119,3 +119,10 @@ export const MOOD_LABEL: Record<string, string> = {
   tired: '疲れ気味',
   unhappy: '不満',
 };
+
+export const MOOD_COLOR: Record<string, string> = {
+  happy: 'var(--color-jade)',
+  neutral: 'var(--color-paper-dim)',
+  tired: 'var(--color-gold)',
+  unhappy: 'var(--color-seal)',
+};
