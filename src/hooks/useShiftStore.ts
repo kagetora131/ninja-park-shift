@@ -171,6 +171,36 @@ export function useShiftStore() {
     [refetchShifts],
   );
 
+  /** 自動配置などでまとめて複数件を作成する際に使う一括upsert(refetchは最後に1回だけ)。 */
+  const bulkUpsertShifts = useCallback(
+    async (inputs: NewShiftInput[]) => {
+      if (inputs.length === 0) return;
+      const rows = inputs.map((input) => {
+        const id = `${input.date}_${input.employeeId}`;
+        const [sh, sm] = input.start.split(':').map(Number);
+        const [eh, em] = input.end.split(':').map(Number);
+        const worked = Math.max(0, eh * 60 + em - (sh * 60 + sm) - input.breakMinutes);
+        const actualHours = Math.round((worked / 60) * 10) / 10;
+        return {
+          id,
+          date: input.date,
+          day: weekdayJp(input.date),
+          employee_id: input.employeeId,
+          facility: input.facility,
+          start: input.start,
+          end: input.end,
+          break_minutes: input.breakMinutes,
+          actual_hours: actualHours,
+          is_desired: input.isDesired,
+          note: input.note ?? null,
+        };
+      });
+      await supabase.from('shifts').upsert(rows);
+      await refetchShifts();
+    },
+    [refetchShifts],
+  );
+
   const upsertEmployee = useCallback(
     async (input: EmployeeInput) => {
       const existing = input.id ? employeeMap.get(input.id) : undefined;
@@ -266,6 +296,7 @@ export function useShiftStore() {
     postRequirements,
     upsertShift,
     removeShift,
+    bulkUpsertShifts,
     upsertEmployee,
     removeEmployee,
     updateFacilityRevenue,

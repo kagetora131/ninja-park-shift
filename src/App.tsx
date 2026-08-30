@@ -16,6 +16,7 @@ import { FinanceEditModal, type FinanceDraft } from './components/FinanceEditMod
 import { useShiftStore } from './hooks/useShiftStore';
 import { useAuth } from './hooks/useAuth';
 import { LabelProvider } from './hooks/LabelContext';
+import { autoAssignShifts } from './lib/autoAssign';
 import type { Employee, Profile, ShiftEntry } from './types';
 
 const MANAGER_TABS: TabDef[] = [
@@ -41,6 +42,7 @@ function ManagerApp() {
     postRequirements,
     upsertShift,
     removeShift,
+    bulkUpsertShifts,
     upsertEmployee,
     removeEmployee,
     updateFacilityRevenue,
@@ -56,6 +58,12 @@ function ManagerApp() {
 
   const handleEditShift = (shift: ShiftEntry) => {
     setShiftDraft({ mode: 'edit', date: shift.date, facility: shift.facility, existingShift: shift });
+  };
+
+  const handleAutoAssign = async (dates: string[]) => {
+    const result = autoAssignShifts(employees, shifts, postRequirements, dates);
+    await bulkUpsertShifts(result.created);
+    return result;
   };
 
   const handleEditEmployee = (employee: Employee) => {
@@ -87,8 +95,12 @@ function ManagerApp() {
             shifts={shifts}
             moodMap={moodMap}
             finance={finance}
+            postRequirements={postRequirements}
             onEditShift={handleEditShift}
             onCreateShift={setShiftDraft}
+            onAssignShift={upsertShift}
+            onRemoveShift={removeShift}
+            onAutoAssign={handleAutoAssign}
           />
         )}
 
