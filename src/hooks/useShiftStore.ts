@@ -186,6 +186,7 @@ export function useShiftStore() {
         avatar_base: avatarBase,
         desired_work_days_per_week: input.desiredWorkDaysPerWeek,
         desired_days_off: input.desiredDaysOff,
+        desired_off_dates: existing?.desiredOffDates ?? [],
         max_consecutive_days: input.maxConsecutiveDays,
         qualifications: input.qualifications,
         employment_type: input.employmentType ?? null,

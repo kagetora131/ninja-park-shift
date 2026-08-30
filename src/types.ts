@@ -18,6 +18,8 @@ export interface Employee {
   avatarBase: string;
   desiredWorkDaysPerWeek: number;
   desiredDaysOff: string[];
+  /** 曜日パターンとは別に、カレンダーで個別指定する希望休み("YYYY-MM-DD"の配列)。 */
+  desiredOffDates: string[];
   maxConsecutiveDays: number;
   qualifications: string[];
   employmentType?: string;
@@ -86,12 +88,6 @@ export interface MoodResult {
   reasons: string[];
   consecutiveDays: number;
   helpCountRecent: number;
-}
-
-export interface ShiftDataset {
-  employees: Employee[];
-  shifts: ShiftEntry[];
-  financeRevenue: FinanceRevenueRow[];
 }
 
 /** ロールベース権限(RBAC)。 */

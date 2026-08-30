@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { TrendingDown, TrendingUp, X } from 'lucide-react';
 import { NinjaAvatar } from './NinjaAvatar';
-import { DateTabs } from './DateTabs';
+import { DatePicker } from './DatePicker';
 import { CoverageStrip } from './CoverageStrip';
 import { ShiftRosterPanel } from './ShiftRosterPanel';
 import { FACILITY_ORDER, capableFacilities } from '../data/facilities';
@@ -87,7 +87,7 @@ export function ShiftBoard({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <DateTabs
+        <DatePicker
           dates={dates}
           value={selectedDate}
           onChange={onSelectDate}

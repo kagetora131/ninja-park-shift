@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AlertTriangle, Pencil } from 'lucide-react';
-import { DateTabs } from './DateTabs';
+import { DatePicker } from './DatePicker';
 import { FACILITY_ORDER } from '../data/facilities';
 import { formatDateJp, weekdayJp } from '../lib/format';
 import { bestProfitDay, longestRedStreak, totalsOf } from '../lib/finance';
@@ -33,7 +33,7 @@ export function FinanceDashboard({ finance, onEditFacility }: FinanceDashboardPr
 
   return (
     <div className="space-y-5">
-      <DateTabs
+      <DatePicker
         dates={finance.map((f) => f.date)}
         value={selectedDate}
         onChange={setSelectedDate}

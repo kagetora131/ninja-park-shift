@@ -40,12 +40,17 @@ export function computeMoodForShift(
   const consecutiveDays = countConsecutiveDays(shiftsByDate, targetShift.date);
   const helpCountRecent = countRecentHelp(employee, employeeShiftsSorted, targetIndex);
   const isRequestedDayOff = employee.desiredDaysOff.includes(targetShift.day);
+  const isRequestedOffDate = employee.desiredOffDates.includes(targetShift.date);
   const isFullyUnfamiliar =
     targetShift.facility !== employee.mainFacility && !employee.crossTrained.includes(targetShift.facility);
   const overrun = consecutiveDays - employee.maxConsecutiveDays;
 
   const reasons: string[] = [];
 
+  if (isRequestedOffDate) {
+    reasons.push('カレンダーで指定した希望休みの日に出勤している');
+    return { mood: 'unhappy', reasons, consecutiveDays, helpCountRecent };
+  }
   if (isRequestedDayOff) {
     reasons.push('希望休みの曜日に出勤している');
     return { mood: 'unhappy', reasons, consecutiveDays, helpCountRecent };

@@ -11,6 +11,7 @@ export interface EmployeeRow {
   avatar_base: string;
   desired_work_days_per_week: number;
   desired_days_off: string[];
+  desired_off_dates: string[];
   max_consecutive_days: number;
   qualifications: string[];
   employment_type: string | null;
@@ -32,6 +33,7 @@ export function mapEmployeeRow(r: EmployeeRow): Employee {
     avatarBase: r.avatar_base,
     desiredWorkDaysPerWeek: r.desired_work_days_per_week,
     desiredDaysOff: r.desired_days_off ?? [],
+    desiredOffDates: r.desired_off_dates ?? [],
     maxConsecutiveDays: r.max_consecutive_days,
     qualifications: r.qualifications ?? [],
     employmentType: r.employment_type ?? undefined,
