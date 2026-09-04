@@ -1,5 +1,6 @@
 import { generateNinjaAvatar } from '../lib/avatar';
 import { HAIR_STYLES_BY_GENDER, SKIN_COLORS } from '../data/avatarOptions';
+import { useLabelContext } from '../hooks/LabelContext';
 import type { AvatarGender } from '../types';
 
 interface AvatarPickerProps {
@@ -11,12 +12,12 @@ interface AvatarPickerProps {
   onChange: (patch: Partial<{ gender: AvatarGender; top: string; skinColor: string; glasses: boolean }>) => void;
 }
 
-const GENDERS: [AvatarGender, string][] = [
-  ['male', '男性'],
-  ['female', '女性'],
-];
-
 export function AvatarPicker({ avatarBase, gender, top, skinColor, glasses, onChange }: AvatarPickerProps) {
+  const { locale, t } = useLabelContext();
+  const GENDERS: [AvatarGender, string][] = [
+    ['male', t('avatarPicker.male')],
+    ['female', t('avatarPicker.female')],
+  ];
   const hairOptions = HAIR_STYLES_BY_GENDER[gender];
   const previewUri = generateNinjaAvatar(avatarBase, 'neutral', { top, skinColor, glasses });
 
@@ -28,10 +29,16 @@ export function AvatarPicker({ avatarBase, gender, top, skinColor, glasses, onCh
 
   return (
     <div className="flex gap-3 rounded-lg border border-paper/10 bg-void/40 p-3">
-      <img src={previewUri} alt="プレビュー" width={64} height={64} className="h-16 w-16 shrink-0 rounded-full" />
+      <img
+        src={previewUri}
+        alt={t('avatarPicker.previewAlt')}
+        width={64}
+        height={64}
+        className="h-16 w-16 shrink-0 rounded-full"
+      />
       <div className="flex-1 space-y-2">
         <div className="flex items-center gap-2">
-          <span className="w-14 shrink-0 text-[11px] text-paper-dim">性別</span>
+          <span className="w-14 shrink-0 text-[11px] text-paper-dim">{t('avatarPicker.gender')}</span>
           <div className="flex gap-1.5">
             {GENDERS.map(([value, label]) => (
               <button
@@ -51,14 +58,14 @@ export function AvatarPicker({ avatarBase, gender, top, skinColor, glasses, onCh
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="w-14 shrink-0 text-[11px] text-paper-dim">肌の色</span>
+          <span className="w-14 shrink-0 text-[11px] text-paper-dim">{t('avatarPicker.skinColor')}</span>
           <div className="flex gap-1.5">
             {SKIN_COLORS.map((color) => (
               <button
                 key={color}
                 type="button"
                 onClick={() => onChange({ skinColor: color })}
-                title="肌の色を選択"
+                title={t('avatarPicker.skinColorTitle')}
                 className="h-5 w-5 rounded-full transition"
                 style={{
                   background: `#${color}`,
@@ -70,7 +77,7 @@ export function AvatarPicker({ avatarBase, gender, top, skinColor, glasses, onCh
         </div>
 
         <label className="flex items-center gap-2">
-          <span className="w-14 shrink-0 text-[11px] text-paper-dim">髪型</span>
+          <span className="w-14 shrink-0 text-[11px] text-paper-dim">{t('avatarPicker.hair')}</span>
           <select
             value={top}
             onChange={(e) => onChange({ top: e.target.value })}
@@ -78,21 +85,21 @@ export function AvatarPicker({ avatarBase, gender, top, skinColor, glasses, onCh
           >
             {hairOptions.map((o) => (
               <option key={o.value} value={o.value}>
-                {o.label}
+                {locale === 'en' ? o.labelEn : o.label}
               </option>
             ))}
           </select>
         </label>
 
         <label className="flex items-center gap-2 text-[11px] text-paper-dim">
-          <span className="w-14 shrink-0">眼鏡</span>
+          <span className="w-14 shrink-0">{t('avatarPicker.glasses')}</span>
           <input
             type="checkbox"
             checked={glasses}
             onChange={(e) => onChange({ glasses: e.target.checked })}
             className="h-3.5 w-3.5 accent-gold"
           />
-          かける
+          {t('avatarPicker.wearGlasses')}
         </label>
       </div>
     </div>

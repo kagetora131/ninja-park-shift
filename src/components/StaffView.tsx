@@ -2,6 +2,7 @@ import { Plus } from 'lucide-react';
 import { NinjaAvatar } from './NinjaAvatar';
 import { FACILITIES } from '../data/facilities';
 import { FACILITY_ICON } from './facilityIcon';
+import { facilityShortLabel } from '../lib/i18n';
 import { useLabelContext } from '../hooks/LabelContext';
 import type { Employee } from '../types';
 
@@ -12,18 +13,18 @@ interface StaffViewProps {
 }
 
 export function StaffView({ employees, onEdit, onCreate }: StaffViewProps) {
-  const { employeeName, facilityName, roleName } = useLabelContext();
+  const { locale, employeeName, facilityName, roleName, t } = useLabelContext();
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-mincho text-sm font-bold text-paper">スタッフ一覧({employees.length}名)</h2>
+        <h2 className="font-mincho text-sm font-bold text-paper">{t('staff.heading', { n: employees.length })}</h2>
         <button
           type="button"
           onClick={onCreate}
           className="flex items-center gap-1.5 rounded-full border border-gold/50 px-3 py-1.5 text-xs text-gold transition hover:bg-gold/10"
         >
           <Plus size={14} />
-          新しい忍者を雇う
+          {t('staff.hire')}
         </button>
       </div>
 
@@ -42,7 +43,7 @@ export function StaffView({ employees, onEdit, onCreate }: StaffViewProps) {
                 <p className="truncate text-sm font-medium text-paper">{employeeName(employee)}</p>
                 <p className="text-[11px] text-paper-dim">
                   {roleName(employee.role)}
-                  {employee.isTrainee && <span className="ml-1 text-gold">・研修中</span>}
+                  {employee.isTrainee && <span className="ml-1 text-gold">{t('staff.traineeSuffix')}</span>}
                 </p>
                 <div className="mt-1.5 flex items-center gap-1 text-[11px] text-gold">
                   <MainIcon size={12} />
@@ -50,11 +51,15 @@ export function StaffView({ employees, onEdit, onCreate }: StaffViewProps) {
                 </div>
                 {employee.crossTrained.length > 0 && (
                   <p className="mt-1 text-[10px] text-paper-dim">
-                    応援可：{employee.crossTrained.map((f) => FACILITIES[f].shortName).join('・')}
+                    {t('staff.crossTrainedPrefix', {
+                      list: employee.crossTrained
+                        .map((f) => facilityShortLabel(f, FACILITIES[f].shortName, locale))
+                        .join(locale === 'en' ? ', ' : '・'),
+                    })}
                   </p>
                 )}
                 <p className="mt-1 text-[10px] text-paper-dim">
-                  週{employee.desiredWorkDaysPerWeek}日希望・連勤上限{employee.maxConsecutiveDays}日
+                  {t('shiftBoard.desiredWorkAndMax', { days: employee.desiredWorkDaysPerWeek, max: employee.maxConsecutiveDays })}
                 </p>
               </div>
             </button>

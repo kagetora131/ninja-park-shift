@@ -3,8 +3,9 @@ import { ArrowLeftRight, ChevronLeft, ChevronRight, Users } from 'lucide-react';
 import { NinjaAvatar } from './NinjaAvatar';
 import { FACILITY_COLOR, FACILITY_ORDER, capableFacilities } from '../data/facilities';
 import { FACILITY_ICON } from './facilityIcon';
-import { formatDateJp, weekdayJp } from '../lib/format';
+import { formatDateJp } from '../lib/format';
 import { MOOD_COLOR } from '../lib/mood';
+import { translateReason, formatMonthLabel } from '../lib/i18n';
 import {
   CALENDAR_END_MONTH,
   CALENDAR_END_YEAR,
@@ -29,7 +30,7 @@ function todayOr(dates: string[]): string {
 }
 
 export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsViewProps) {
-  const { employeeName, facilityName } = useLabelContext();
+  const { locale, employeeName, facilityName, t } = useLabelContext();
   const [view, setView] = useState({ year: CALENDAR_START_YEAR, month: CALENDAR_START_MONTH });
   const dates = datesInMonth(view.year, view.month);
   const [selectedDate, setSelectedDate] = useState(() => todayOr(dates));
@@ -67,7 +68,7 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
         <NinjaAvatar employee={employee} mood="neutral" size="md" />
         <div>
           <p className="font-mincho text-sm font-bold text-paper">{employeeName(employee)}</p>
-          <p className="text-[11px] text-paper-dim">シフトの閲覧のみです(編集はマネージャーが行います)</p>
+          <p className="text-[11px] text-paper-dim">{t('myShifts.viewOnlyNotice')}</p>
         </div>
       </div>
 
@@ -80,9 +81,7 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
         >
           <ChevronLeft size={16} />
         </button>
-        <p className="font-mincho text-base font-bold text-paper">
-          {view.year}年{view.month}月
-        </p>
+        <p className="font-mincho text-base font-bold text-paper">{formatMonthLabel(view.year, view.month, locale)}</p>
         <button
           type="button"
           onClick={() => goMonth(1)}
@@ -98,7 +97,7 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
           <thead>
             <tr>
               <th className="sticky left-0 top-0 z-30 min-w-[92px] border-b border-r border-paper/10 bg-void-soft px-2 py-2 text-left font-medium text-paper-dim">
-                日付
+                {t('myShifts.dateHeader')}
               </th>
               {sortedEmployees.map((emp) => {
                 const isMe = emp.id === employee.id;
@@ -109,7 +108,7 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
                       isMe ? 'bg-gold/15' : 'bg-void-soft'
                     }`}
                     style={{ borderTop: `3px solid ${FACILITY_COLOR[emp.mainFacility]}` }}
-                    title={`${employeeName(emp)}(${facilityName(emp.mainFacility)}所属)`}
+                    title={`${employeeName(emp)} (${facilityName(emp.mainFacility)})`}
                   >
                     <span className={`block max-w-[76px] truncate ${isMe ? 'text-gold' : 'text-paper'}`}>
                       {employeeName(emp)}
@@ -129,7 +128,7 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
                     style={isSelected ? { background: 'rgba(182,146,79,0.12)' } : undefined}
                   >
                     <button type="button" onClick={() => setSelectedDate(date)} className="flex items-center gap-1.5">
-                      {formatDateJp(date, weekdayJp(date))}
+                      {formatDateJp(date, locale)}
                     </button>
                   </td>
                   {sortedEmployees.map((emp) => {
@@ -175,10 +174,12 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
 
       <div className="rounded-xl border border-paper/10 bg-void-soft/50 p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-mincho text-sm font-bold text-paper">{formatDateJp(selectedDate, weekdayJp(selectedDate))} の配置</h2>
+          <h2 className="font-mincho text-sm font-bold text-paper">
+            {t('myShifts.placementHeading', { date: formatDateJp(selectedDate, locale) })}
+          </h2>
           <span className="flex items-center gap-1 text-[11px] text-paper-dim">
             <Users size={12} />
-            {shiftsForSelected.length}名出勤
+            {t('myShifts.attendanceCount', { n: shiftsForSelected.length })}
           </span>
         </div>
 
@@ -195,7 +196,7 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
                   <p className="text-xs font-medium text-paper">{facilityName(facility)}</p>
                 </div>
                 {facilityShifts.length === 0 ? (
-                  <p className="py-2 text-center text-[11px] text-paper-dim/70">配置なし</p>
+                  <p className="py-2 text-center text-[11px] text-paper-dim/70">{t('myShifts.noPlacement')}</p>
                 ) : (
                   <div className="space-y-2">
                     {facilityShifts.map((shift) => {
@@ -213,12 +214,12 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
                             mood={mood?.mood ?? 'neutral'}
                             facility={facility}
                             size="sm"
-                            title={mood?.reasons.join(' / ')}
+                            title={mood?.reasons.map((r) => translateReason(r, locale)).join(' / ')}
                           />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-[11px] font-medium text-paper">
                               {employeeName(person)}
-                              {isMe && <span className="ml-1 text-gold">(あなた)</span>}
+                              {isMe && <span className="ml-1 text-gold">{t('myShifts.you')}</span>}
                             </p>
                             <p className="text-[10px] text-paper-dim">{shift.start}–{shift.end}</p>
                           </div>
@@ -237,14 +238,17 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
         <div className="rounded-xl border border-gold/30 bg-void-soft/50 p-4">
           <div className="mb-2 flex items-center gap-1.5">
             <ArrowLeftRight size={14} className="text-gold" />
-            <h2 className="font-mincho text-sm font-bold text-paper">交代候補</h2>
+            <h2 className="font-mincho text-sm font-bold text-paper">{t('myShifts.swapCandidatesHeading')}</h2>
           </div>
           <p className="mb-3 text-[11px] text-paper-dim">
-            この日({facilityName(myShiftToday.facility)}・{myShiftToday.start}–{myShiftToday.end})を代わってもらえそうな、
-            対応可能かつこの日は空いている忍者です。交代したい場合はマネージャーに相談してください。
+            {t('myShifts.swapExplain', {
+              facility: facilityName(myShiftToday.facility),
+              start: myShiftToday.start,
+              end: myShiftToday.end,
+            })}
           </p>
           {swapCandidates.length === 0 ? (
-            <p className="text-[11px] text-paper-dim/70">現在、対応可能で空いている忍者はいません</p>
+            <p className="text-[11px] text-paper-dim/70">{t('myShifts.noSwapCandidates')}</p>
           ) : (
             <div className="flex flex-wrap gap-3">
               {swapCandidates.map((c) => (

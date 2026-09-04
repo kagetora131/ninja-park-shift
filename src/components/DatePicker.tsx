@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { MonthCalendar } from './MonthCalendar';
-import { formatDateJp, weekdayJp } from '../lib/format';
+import { formatDateJp } from '../lib/format';
+import { useLabelContext } from '../hooks/LabelContext';
 
 interface DatePickerProps {
   dates: string[];
@@ -11,6 +12,7 @@ interface DatePickerProps {
 }
 
 export function DatePicker({ dates, value, onChange, dotColorFor }: DatePickerProps) {
+  const { locale, t } = useLabelContext();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<{ year: number; month: number } | null>(null);
   const index = dates.indexOf(value);
@@ -43,7 +45,7 @@ export function DatePicker({ dates, value, onChange, dotColorFor }: DatePickerPr
         className="flex items-center gap-1.5 rounded-md border border-paper/20 bg-void px-3 py-1.5 text-sm text-paper transition hover:border-gold"
       >
         <CalendarDays size={14} className="text-gold" />
-        {value ? formatDateJp(value, weekdayJp(value)) : '日付を選択'}
+        {value ? formatDateJp(value, locale) : t('datePicker.selectDate')}
       </button>
 
       <button

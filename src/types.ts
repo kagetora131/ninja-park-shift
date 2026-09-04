@@ -83,9 +83,27 @@ export type PostRequirements = Record<string, Partial<Record<FacilityId, number 
 
 export type Mood = 'happy' | 'neutral' | 'tired' | 'unhappy';
 
+/** 表情判定の理由。UI表示時に言語ごとへ翻訳できるよう、文言そのものではなくキー+パラメータで持つ。 */
+export type MoodReasonKey =
+  | 'offDateRequested'
+  | 'offWeekdayRequested'
+  | 'severeOverrun'
+  | 'unfamiliarHelpUndesired'
+  | 'consecutiveDays'
+  | 'overrun'
+  | 'unfamiliarHelpContinuing'
+  | 'adjustedFromDesired'
+  | 'helpOnce'
+  | 'allGood';
+
+export interface MoodReason {
+  key: MoodReasonKey;
+  params?: Record<string, number>;
+}
+
 export interface MoodResult {
   mood: Mood;
-  reasons: string[];
+  reasons: MoodReason[];
   consecutiveDays: number;
   helpCountRecent: number;
 }

@@ -8,13 +8,8 @@ interface HeaderProps {
   onSignOut: () => void;
 }
 
-const ROLE_LABEL: Record<UserRole, string> = {
-  manager: '忍者頭領(マネージャー)',
-  employee: '従業員',
-};
-
 export function Header({ role, email, onSignOut }: HeaderProps) {
-  const { locale, setLocale } = useLabelContext();
+  const { locale, setLocale, t } = useLabelContext();
 
   return (
     <header className="border-b border-paper/10 bg-void-soft/60 backdrop-blur">
@@ -24,18 +19,14 @@ export function Header({ role, email, onSignOut }: HeaderProps) {
             <Swords size={20} />
           </div>
           <div>
-            <h1 className="font-mincho text-lg font-bold tracking-wide text-paper sm:text-xl">
-              忍者パークシフト
-            </h1>
-            <p className="text-[11px] tracking-widest text-paper-dim sm:text-xs">
-              NINJA PARK SHIFT MANAGEMENT
-            </p>
+            <h1 className="font-mincho text-lg font-bold tracking-wide text-paper sm:text-xl">{t('header.appName')}</h1>
+            <p className="text-[11px] tracking-widest text-paper-dim sm:text-xs">NINJA PARK SHIFT MANAGEMENT</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="hidden text-right text-[11px] text-paper-dim sm:block">
-            <p className="text-gold">{ROLE_LABEL[role]}</p>
+            <p className="text-gold">{role === 'manager' ? t('header.roleManager') : t('header.roleEmployee')}</p>
             <p>{email}</p>
           </div>
 
@@ -60,7 +51,7 @@ export function Header({ role, email, onSignOut }: HeaderProps) {
             className="flex items-center gap-1.5 rounded-full border border-paper/20 px-3 py-1.5 text-xs text-paper-dim transition hover:border-seal hover:text-seal-bright"
           >
             <LogOut size={14} />
-            ログアウト
+            {t('header.logout')}
           </button>
         </div>
       </div>

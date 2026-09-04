@@ -27,7 +27,7 @@ interface NinjaAvatarProps {
 }
 
 export function NinjaAvatar({ employee, mood, facility, size = 'md', title }: NinjaAvatarProps) {
-  const { employeeName, facilityName } = useLabelContext();
+  const { employeeName, facilityName, t } = useLabelContext();
   const px = SIZE_PX[size];
   const dataUri = generateNinjaAvatar(employee.avatarBase, mood, {
     top: employee.avatarTop,
@@ -73,7 +73,7 @@ export function NinjaAvatar({ employee, mood, facility, size = 'md', title }: Ni
           <div
             className="absolute left-0 top-0 flex items-center justify-center rounded-full border-2 border-void bg-void"
             style={{ width: px * 0.34, height: px * 0.34 }}
-            title={`本来は${facilityName(employee.mainFacility)}所属`}
+            title={t('avatar.helpBadgeTitle', { facility: facilityName(employee.mainFacility) })}
           >
             <ArrowLeftRight size={px * 0.2} strokeWidth={2.5} color="var(--color-gold)" />
           </div>

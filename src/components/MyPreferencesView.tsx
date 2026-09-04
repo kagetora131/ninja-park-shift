@@ -6,6 +6,8 @@ import { WEEKDAYS } from '../data/constants';
 import { CALENDAR_END, CALENDAR_START } from '../data/calendarRange';
 import { HAIR_STYLES_MALE, SKIN_COLORS } from '../data/avatarOptions';
 import { supabase } from '../lib/supabaseClient';
+import { weekdayLabel } from '../lib/i18n';
+import { useLabelContext } from '../hooks/LabelContext';
 import type { AvatarGender, Employee } from '../types';
 
 interface MyPreferencesViewProps {
@@ -14,6 +16,7 @@ interface MyPreferencesViewProps {
 }
 
 export function MyPreferencesView({ employee, onSaved }: MyPreferencesViewProps) {
+  const { locale, t } = useLabelContext();
   const [desiredWorkDaysPerWeek, setDesiredWorkDaysPerWeek] = useState(employee.desiredWorkDaysPerWeek);
   const [desiredDaysOff, setDesiredDaysOff] = useState<string[]>(employee.desiredDaysOff);
   const [desiredOffDates, setDesiredOffDates] = useState<string[]>(employee.desiredOffDates);
@@ -56,7 +59,7 @@ export function MyPreferencesView({ employee, onSaved }: MyPreferencesViewProps)
     ]);
     setSaving(false);
     if (prefError || avatarError) {
-      setError((prefError ?? avatarError)?.message ?? '保存に失敗しました');
+      setError((prefError ?? avatarError)?.message ?? t('prefs.saveFailed'));
       return;
     }
     await onSaved();
@@ -66,7 +69,7 @@ export function MyPreferencesView({ employee, onSaved }: MyPreferencesViewProps)
 
   return (
     <div className="space-y-4">
-      <h2 className="font-mincho text-sm font-bold text-paper">自分の設定</h2>
+      <h2 className="font-mincho text-sm font-bold text-paper">{t('prefs.heading')}</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-4 rounded-xl border border-paper/10 bg-void-soft/50 p-4">
           <AvatarPicker
@@ -84,7 +87,7 @@ export function MyPreferencesView({ employee, onSaved }: MyPreferencesViewProps)
           />
 
           <div>
-            <label className="mb-1 block text-xs text-paper-dim">希望勤務日数/週</label>
+            <label className="mb-1 block text-xs text-paper-dim">{t('common.desiredWorkDaysPerWeek')}</label>
             <input
               type="number"
               min={0}
@@ -96,7 +99,7 @@ export function MyPreferencesView({ employee, onSaved }: MyPreferencesViewProps)
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-paper-dim">希望休み曜日(毎週の傾向)</label>
+            <label className="mb-1 block text-xs text-paper-dim">{t('prefs.desiredDaysOffWeekly')}</label>
             <div className="flex flex-wrap gap-1.5">
               {WEEKDAYS.map((day) => (
                 <label
@@ -113,7 +116,7 @@ export function MyPreferencesView({ employee, onSaved }: MyPreferencesViewProps)
                     onChange={() => toggleDayOff(day)}
                     className="hidden"
                   />
-                  {day}
+                  {weekdayLabel(day, locale)}
                 </label>
               ))}
             </div>
@@ -121,11 +124,8 @@ export function MyPreferencesView({ employee, onSaved }: MyPreferencesViewProps)
         </div>
 
         <div className="rounded-xl border border-paper/10 bg-void-soft/50 p-4">
-          <label className="mb-1 block text-xs text-paper-dim">希望休みカレンダー(特定の日付)</label>
-          <p className="mb-3 text-[11px] text-paper-dim">
-            旅行や用事など、特定の日だけ休みたい場合はカレンダーの日付をタップして指定してください。
-            指定した日に配置されると、あなたの忍者は不満そうな表情になります。
-          </p>
+          <label className="mb-1 block text-xs text-paper-dim">{t('prefs.offCalendarHeading')}</label>
+          <p className="mb-3 text-[11px] text-paper-dim">{t('prefs.offCalendarDescription')}</p>
           <MonthCalendar
             year={calendarView.year}
             month={calendarView.month}
@@ -137,7 +137,7 @@ export function MyPreferencesView({ employee, onSaved }: MyPreferencesViewProps)
           />
           {desiredOffDates.length > 0 && (
             <p className="mt-2 text-[11px] text-gold">
-              指定中：{[...desiredOffDates].sort().join('、')}
+              {t('prefs.selectedDatesPrefix', { list: [...desiredOffDates].sort().join('、') })}
             </p>
           )}
         </div>
@@ -150,7 +150,7 @@ export function MyPreferencesView({ employee, onSaved }: MyPreferencesViewProps)
           className="flex items-center gap-1.5 rounded-md border border-gold bg-gold/10 px-4 py-1.5 text-xs font-medium text-gold transition hover:bg-gold/20 disabled:opacity-50"
         >
           <Save size={13} />
-          {saving ? '保存中...' : saved ? '保存しました' : '保存'}
+          {saving ? t('prefs.saving') : saved ? t('prefs.saved') : t('common.save')}
         </button>
       </form>
     </div>

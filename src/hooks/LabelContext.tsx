@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { useLocale } from './useLocale';
 import { useLabels } from './useLabel';
 import { FACILITIES } from '../data/facilities';
+import { t, type StringKey } from '../lib/i18n';
 import type { Employee, FacilityId, LabelEntityType, LabelRow, LabelValues, Locale } from '../types';
 
 interface LabelContextValue {
@@ -13,6 +14,8 @@ interface LabelContextValue {
   facilityName: (facilityId: FacilityId) => string;
   roleName: (role: string) => string;
   qualificationName: (qualification: string) => string;
+  /** 静的なUI文言辞書(src/lib/i18n.ts)を現在の言語で引く。 */
+  t: (key: StringKey, params?: Record<string, string | number>) => string;
   upsertLabel: (entityType: LabelEntityType, entityId: string, field: string, values: LabelValues) => Promise<void>;
   deleteLabel: (entityType: LabelEntityType, entityId: string, field: string) => Promise<void>;
 }
@@ -33,6 +36,7 @@ export function LabelProvider({ children }: { children: ReactNode }) {
       facilityName: (facilityId) => getLabel('facility', facilityId, 'label', FACILITIES[facilityId].name, locale),
       roleName: (role) => getLabel('role', role, 'label', role, locale),
       qualificationName: (q) => getLabel('qualification', q, 'label', q, locale),
+      t: (key, params) => t(key, locale, params),
       upsertLabel,
       deleteLabel,
     }),

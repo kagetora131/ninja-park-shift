@@ -47,35 +47,39 @@ function computeCoverageRows(
   return rows.sort((a, b) => a.date.localeCompare(b.date));
 }
 
-const STATUS_STYLE: Record<CoverageRow['status'], { label: string; className: string; Icon: typeof AlertTriangle }> = {
-  empty: { label: '誰もいない', className: 'border-seal/60 bg-seal/10 text-seal-bright', Icon: AlertTriangle },
-  understaffed: { label: '人員不足', className: 'border-seal/40 bg-seal/5 text-seal-bright', Icon: Users },
-  overstaffed: { label: '人員過多', className: 'border-gold/50 bg-gold/10 text-gold', Icon: TrendingUp },
-};
-
 export function PostCoveragePanel({ dates, shifts, postRequirements, onSelectDate }: PostCoveragePanelProps) {
-  const { facilityName } = useLabelContext();
+  const { locale, facilityName, t } = useLabelContext();
   const rows = computeCoverageRows(dates, shifts, postRequirements);
   const emptyCount = rows.filter((r) => r.status === 'empty').length;
   const shortCount = rows.filter((r) => r.status === 'understaffed').length;
   const overCount = rows.filter((r) => r.status === 'overstaffed').length;
 
+  const STATUS_STYLE: Record<CoverageRow['status'], { label: string; className: string; Icon: typeof AlertTriangle }> = {
+    empty: { label: t('coverage.statusEmpty'), className: 'border-seal/60 bg-seal/10 text-seal-bright', Icon: AlertTriangle },
+    understaffed: { label: t('coverage.statusShort'), className: 'border-seal/40 bg-seal/5 text-seal-bright', Icon: Users },
+    overstaffed: { label: t('coverage.statusOver'), className: 'border-gold/50 bg-gold/10 text-gold', Icon: TrendingUp },
+  };
+
   return (
     <div className="flex w-full shrink-0 flex-col rounded-xl border border-paper/10 bg-void-soft/50 p-3 lg:w-72">
-      <h3 className="font-mincho text-sm font-bold text-paper">ポスト充足状況</h3>
-      <p className="mt-1 text-[11px] text-paper-dim">
-        給与・ポスト設定の必要人数(曜日×施設)と、実際の配置人数を比較しています。
-      </p>
+      <h3 className="font-mincho text-sm font-bold text-paper">{t('coverage.heading')}</h3>
+      <p className="mt-1 text-[11px] text-paper-dim">{t('coverage.description')}</p>
       <div className="mt-2 flex flex-wrap gap-1.5 text-[10px]">
-        <span className="rounded-full border border-seal/60 bg-seal/10 px-2 py-0.5 text-seal-bright">不在 {emptyCount}</span>
-        <span className="rounded-full border border-seal/40 bg-seal/5 px-2 py-0.5 text-seal-bright">不足 {shortCount}</span>
-        <span className="rounded-full border border-gold/50 bg-gold/10 px-2 py-0.5 text-gold">過多 {overCount}</span>
+        <span className="rounded-full border border-seal/60 bg-seal/10 px-2 py-0.5 text-seal-bright">
+          {t('coverage.empty')} {emptyCount}
+        </span>
+        <span className="rounded-full border border-seal/40 bg-seal/5 px-2 py-0.5 text-seal-bright">
+          {t('coverage.short')} {shortCount}
+        </span>
+        <span className="rounded-full border border-gold/50 bg-gold/10 px-2 py-0.5 text-gold">
+          {t('coverage.over')} {overCount}
+        </span>
       </div>
 
       <div className="mt-3 max-h-[60vh] space-y-1.5 overflow-y-auto pr-1 lg:max-h-[calc(100vh-18rem)]">
         {rows.length === 0 ? (
           <p className="rounded-lg border border-dashed border-paper/15 py-6 text-center text-xs text-paper-dim/70">
-            この月は必要人数どおりに配置されています
+            {t('coverage.allGood')}
           </p>
         ) : (
           rows.map((row) => {
@@ -89,14 +93,14 @@ export function PostCoveragePanel({ dates, shifts, postRequirements, onSelectDat
               >
                 <span className="flex items-center gap-1.5 min-w-0">
                   <Icon size={12} className="shrink-0" />
-                  <span className="shrink-0 font-medium">{formatDateJp(row.date, weekdayJp(row.date))}</span>
+                  <span className="shrink-0 font-medium">{formatDateJp(row.date, locale)}</span>
                   <span className="flex items-center gap-1 truncate">
                     <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: FACILITY_COLOR[row.facility] }} />
                     {facilityName(row.facility)}
                   </span>
                 </span>
                 <span className="shrink-0 whitespace-nowrap">
-                  {row.actual}/{row.required}名・{label}
+                  {t('coverage.rowSummary', { actual: row.actual, required: row.required, status: label })}
                 </span>
               </button>
             );

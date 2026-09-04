@@ -15,22 +15,30 @@ import { EmployeeEditModal, type EmployeeDraft } from './components/EmployeeEdit
 import { FinanceEditModal, type FinanceDraft } from './components/FinanceEditModal';
 import { useShiftStore } from './hooks/useShiftStore';
 import { useAuth } from './hooks/useAuth';
-import { LabelProvider } from './hooks/LabelContext';
+import { LabelProvider, useLabelContext } from './hooks/LabelContext';
 import { autoAssignShifts } from './lib/autoAssign';
+import { useLocale } from './hooks/useLocale';
+import { t } from './lib/i18n';
 import type { Employee, Profile, ShiftEntry } from './types';
 
-const MANAGER_TABS: TabDef[] = [
-  { id: 'board', label: 'シフト表', icon: TableProperties },
-  { id: 'staff', label: 'スタッフ管理', icon: Users },
-  { id: 'finance', label: '収支', icon: Wallet },
-  { id: 'posts', label: '給与・ポスト設定', icon: ClipboardList },
-  { id: 'labels', label: '用語管理', icon: Languages },
-];
+function useManagerTabs(): TabDef[] {
+  const { t } = useLabelContext();
+  return [
+    { id: 'board', label: t('tab.board'), icon: TableProperties },
+    { id: 'staff', label: t('tab.staff'), icon: Users },
+    { id: 'finance', label: t('tab.finance'), icon: Wallet },
+    { id: 'posts', label: t('tab.posts'), icon: ClipboardList },
+    { id: 'labels', label: t('tab.labels'), icon: Languages },
+  ];
+}
 
-const EMPLOYEE_TABS: TabDef[] = [
-  { id: 'myShifts', label: 'マイシフト', icon: CalendarDays },
-  { id: 'myPreferences', label: '自分の設定', icon: UserCog },
-];
+function useEmployeeTabs(): TabDef[] {
+  const { t } = useLabelContext();
+  return [
+    { id: 'myShifts', label: t('tab.myShifts'), icon: CalendarDays },
+    { id: 'myPreferences', label: t('tab.myPreferences'), icon: UserCog },
+  ];
+}
 
 function ManagerApp() {
   const {
@@ -51,6 +59,8 @@ function ManagerApp() {
     updateFulltimeMonthlySalary,
     updatePostRequirement,
   } = useShiftStore();
+  const { t } = useLabelContext();
+  const managerTabs = useManagerTabs();
   const [activeTab, setActiveTab] = useState('board');
   const [shiftDraft, setShiftDraft] = useState<ShiftDraft | null>(null);
   const [employeeDraft, setEmployeeDraft] = useState<EmployeeDraft | null>(null);
@@ -78,8 +88,8 @@ function ManagerApp() {
     const shiftCount = shifts.filter((s) => s.employeeId === id).length;
     const message =
       shiftCount > 0
-        ? `この忍者を退職させますか？割り当て済みのシフト${shiftCount}件も一緒に削除されます。`
-        : 'この忍者を退職させますか？';
+        ? t('employeeModal.confirmDeleteWithShifts', { count: shiftCount })
+        : t('employeeModal.confirmDelete');
     if (window.confirm(message)) {
       removeEmployee(id);
     }
@@ -87,7 +97,7 @@ function ManagerApp() {
 
   return (
     <>
-      <TabNav tabs={MANAGER_TABS} active={activeTab} onChange={setActiveTab} />
+      <TabNav tabs={managerTabs} active={activeTab} onChange={setActiveTab} />
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         {activeTab === 'board' && (
           <ShiftBoard
@@ -152,20 +162,22 @@ function ManagerApp() {
 
 function EmployeeApp({ profile }: { profile: Profile }) {
   const { employees, employeeMap, shifts, moodMap, refetchEmployees } = useShiftStore();
+  const { t } = useLabelContext();
+  const employeeTabs = useEmployeeTabs();
   const [activeTab, setActiveTab] = useState('myShifts');
   const employee = profile.employeeId ? employeeMap.get(profile.employeeId) : undefined;
 
   if (!employee) {
     return (
       <main className="mx-auto max-w-6xl px-4 py-10 text-center text-sm text-paper-dim">
-        アカウントに紐づく従業員データが見つかりません。マネージャーにお問い合わせください。
+        {t('app.noEmployeeLinked')}
       </main>
     );
   }
 
   return (
     <>
-      <TabNav tabs={EMPLOYEE_TABS} active={activeTab} onChange={setActiveTab} />
+      <TabNav tabs={employeeTabs} active={activeTab} onChange={setActiveTab} />
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         {activeTab === 'myShifts' && (
           <MyShiftsView employee={employee} employees={employees} shifts={shifts} moodMap={moodMap} />
@@ -205,8 +217,14 @@ interface AppShellProps {
 }
 
 function AppShell({ loading, isAuthenticated, email, profile, error, onSignIn, onSignOut }: AppShellProps) {
+  const { locale } = useLocale();
+
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center text-sm text-paper-dim">読み込み中...</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-paper-dim">
+        {t('app.loading', locale)}
+      </div>
+    );
   }
 
   if (!isAuthenticated) {
@@ -216,7 +234,7 @@ function AppShell({ loading, isAuthenticated, email, profile, error, onSignIn, o
   if (!profile) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-paper-dim">
-        アカウント情報の取得に失敗しました。マネージャーにお問い合わせください。
+        {t('app.profileFetchFailed', locale)}
       </div>
     );
   }

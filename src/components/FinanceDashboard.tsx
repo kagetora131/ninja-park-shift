@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { AlertTriangle, Pencil } from 'lucide-react';
 import { DatePicker } from './DatePicker';
 import { FACILITY_ORDER } from '../data/facilities';
-import { formatDateJp, weekdayJp } from '../lib/format';
+import { formatDateJp } from '../lib/format';
 import { bestProfitDay, longestRedStreak, totalsOf } from '../lib/finance';
 import { ShurikenIcon } from './ShurikenIcon';
 import { useLabelContext } from '../hooks/LabelContext';
@@ -20,7 +20,7 @@ interface FinanceDashboardProps {
 }
 
 export function FinanceDashboard({ finance, onEditFacility }: FinanceDashboardProps) {
-  const { facilityName } = useLabelContext();
+  const { locale, facilityName, t } = useLabelContext();
   const [selectedDate, setSelectedDate] = useState(finance[0]?.date ?? '');
   const totals = useMemo(() => totalsOf(finance), [finance]);
   const streak = useMemo(() => longestRedStreak(finance), [finance]);
@@ -44,10 +44,10 @@ export function FinanceDashboard({ finance, onEditFacility }: FinanceDashboardPr
       />
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard label="期間合計 売上" value={formatYen(totals.revenue)} tone="paper" />
-        <StatCard label="期間合計 人件費" value={formatYen(totals.laborCost)} tone="paper" />
+        <StatCard label={t('finance.periodRevenue')} value={formatYen(totals.revenue)} tone="paper" />
+        <StatCard label={t('finance.periodLabor')} value={formatYen(totals.laborCost)} tone="paper" />
         <StatCard
-          label="期間合計 損益"
+          label={t('finance.periodProfit')}
           value={formatYen(totals.profit)}
           tone={totals.profit >= 0 ? 'jade' : 'seal'}
         />
@@ -56,12 +56,12 @@ export function FinanceDashboard({ finance, onEditFacility }: FinanceDashboardPr
       {streak.length >= 2 && (
         <div className="flex items-center gap-2 rounded-lg border border-seal/50 bg-seal/10 px-4 py-2.5 text-sm text-seal-bright">
           <AlertTriangle size={16} />
-          赤字が{streak.length}日連続しています（〜{streak.endDate}）。人員配置の見直しを検討しましょう。
+          {t('finance.redStreak', { n: streak.length, endDate: streak.endDate })}
         </div>
       )}
 
       <div className="rounded-xl border border-paper/10 bg-void-soft/50 p-4">
-        <h3 className="mb-4 font-mincho text-sm font-bold text-paper">日別損益</h3>
+        <h3 className="mb-4 font-mincho text-sm font-bold text-paper">{t('finance.dailyChart')}</h3>
         <div className="flex h-64 items-stretch gap-1.5 overflow-x-auto pb-1">
           {finance.map((day) => {
             const isBest = best && day.date === best.date && day.profit > 0;
@@ -74,7 +74,7 @@ export function FinanceDashboard({ finance, onEditFacility }: FinanceDashboardPr
                 type="button"
                 onClick={() => setSelectedDate(day.date)}
                 className="flex min-w-[38px] flex-1 flex-col items-center"
-                title={`${formatDateJp(day.date, day.day)}：${formatYen(day.profit)}`}
+                title={`${formatDateJp(day.date, locale)}：${formatYen(day.profit)}`}
               >
                 <div className="relative flex w-full flex-1 items-end justify-center">
                   {isBest && (
@@ -96,9 +96,7 @@ export function FinanceDashboard({ finance, onEditFacility }: FinanceDashboardPr
                     style={{ height: `${negativePct}%` }}
                   />
                 </div>
-                <span className="mt-1.5 text-[10px] text-paper-dim">
-                  {Number(day.date.slice(-2))}日
-                </span>
+                <span className="mt-1.5 text-[10px] text-paper-dim">{Number(day.date.slice(-2))}</span>
               </button>
             );
           })}
@@ -109,14 +107,14 @@ export function FinanceDashboard({ finance, onEditFacility }: FinanceDashboardPr
         <div className="rounded-xl border border-paper/10 bg-void-soft/50 p-4">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="font-mincho text-sm font-bold text-paper">
-              {formatDateJp(selected.date, weekdayJp(selected.date))} の施設別内訳
+              {t('finance.detailHeading', { date: formatDateJp(selected.date, locale) })}
             </h3>
             <span
               className={`rounded-full px-2.5 py-1 text-[11px] ${
                 selected.isBlack ? 'bg-jade/15 text-jade' : 'bg-seal/15 text-seal-bright'
               }`}
             >
-              {selected.isBlack ? '黒字' : '赤字'} {formatYen(selected.profit)}
+              {selected.isBlack ? t('finance.black') : t('finance.red')} {formatYen(selected.profit)}
             </span>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
@@ -137,15 +135,15 @@ export function FinanceDashboard({ finance, onEditFacility }: FinanceDashboardPr
                         })
                       }
                       className="text-paper-dim transition hover:text-gold"
-                      title="売上を編集"
+                      title={t('finance.editRevenueTitle')}
                     >
                       <Pencil size={12} />
                     </button>
                   </div>
-                  <p className="text-[11px] text-paper-dim">売上 {formatYen(f.revenue)}</p>
-                  <p className="text-[11px] text-paper-dim">人件費(自動計算) {formatYen(f.laborCost)}</p>
+                  <p className="text-[11px] text-paper-dim">{t('finance.revenue')} {formatYen(f.revenue)}</p>
+                  <p className="text-[11px] text-paper-dim">{t('finance.laborAuto')} {formatYen(f.laborCost)}</p>
                   <p className={`text-[11px] font-medium ${margin >= 0 ? 'text-jade' : 'text-seal-bright'}`}>
-                    差引 {formatYen(margin)}
+                    {t('finance.margin')} {formatYen(margin)}
                   </p>
                 </div>
               );

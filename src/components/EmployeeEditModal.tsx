@@ -4,6 +4,8 @@ import { AvatarPicker } from './AvatarPicker';
 import { FACILITIES, FACILITY_ORDER } from '../data/facilities';
 import { HAIR_STYLES_MALE, SKIN_COLORS } from '../data/avatarOptions';
 import { supabase } from '../lib/supabaseClient';
+import { facilityShortLabel, weekdayLabel } from '../lib/i18n';
+import { useLabelContext } from '../hooks/LabelContext';
 import type { EmployeeInput } from '../hooks/useShiftStore';
 import type { AvatarGender, Employee, FacilityId } from '../types';
 
@@ -28,6 +30,7 @@ interface EmployeeEditModalProps {
 }
 
 export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: EmployeeEditModalProps) {
+  const { locale, roleName, t } = useLabelContext();
   const existing = draft.employee;
   const [name, setName] = useState(existing?.name ?? '');
   const [role, setRole] = useState(existing?.role ?? 'アルバイト');
@@ -100,7 +103,7 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
       });
       if (error || data?.error) {
         setAccountStatus('error');
-        setAccountError(data?.error ?? error?.message ?? 'アカウント作成に失敗しました');
+        setAccountError(data?.error ?? error?.message ?? t('employeeModal.accountCreateFailed'));
         return; // 従業員データは保存済みなので、エラー表示のためモーダルは開いたままにする
       }
       setAccountStatus('done');
@@ -117,7 +120,7 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-mincho text-base font-bold text-paper">
-            {draft.mode === 'create' ? '新しい忍者を雇う' : '忍者情報を編集'}
+            {draft.mode === 'create' ? t('employeeModal.hireHeading') : t('employeeModal.editHeading')}
           </h2>
           <button type="button" onClick={onClose} className="text-paper-dim hover:text-paper">
             <X size={18} />
@@ -140,7 +143,7 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
           />
 
           <div>
-            <label className="mb-1 block text-xs text-paper-dim">名前</label>
+            <label className="mb-1 block text-xs text-paper-dim">{t('employeeModal.name')}</label>
             <input
               type="text"
               value={name}
@@ -151,7 +154,7 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-paper-dim">雇用形態</label>
+            <label className="mb-1 block text-xs text-paper-dim">{t('employeeModal.roleLabel')}</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
@@ -159,19 +162,17 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
             >
               {ROLES.map((r) => (
                 <option key={r} value={r}>
-                  {r}
+                  {roleName(r)}
                 </option>
               ))}
             </select>
             {role === '社員' && (
-              <p className="mt-1 text-[11px] text-paper-dim">
-                ※人件費は「給与・ポスト設定」の社員月給を日割りして自動計算されます
-              </p>
+              <p className="mt-1 text-[11px] text-paper-dim">{t('employeeModal.fulltimeSalaryNote')}</p>
             )}
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-paper-dim">所属施設</label>
+            <label className="mb-1 block text-xs text-paper-dim">{t('employeeModal.mainFacility')}</label>
             <div className="flex gap-2">
               {FACILITY_ORDER.map((f) => (
                 <button
@@ -184,14 +185,14 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
                       : 'border-paper/20 text-paper-dim hover:border-paper/40'
                   }`}
                 >
-                  {FACILITIES[f].shortName}
+                  {facilityShortLabel(f, FACILITIES[f].shortName, locale)}
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-paper-dim">応援可能な施設(掛け持ち)</label>
+            <label className="mb-1 block text-xs text-paper-dim">{t('employeeModal.crossTrained')}</label>
             <div className="flex flex-wrap gap-2">
               {FACILITY_ORDER.filter((f) => f !== mainFacility).map((f) => (
                 <label
@@ -208,7 +209,7 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
                     onChange={() => toggleCrossTrained(f)}
                     className="h-3 w-3 accent-jade"
                   />
-                  {FACILITIES[f].shortName}
+                  {facilityShortLabel(f, FACILITIES[f].shortName, locale)}
                 </label>
               ))}
             </div>
@@ -216,7 +217,7 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs text-paper-dim">希望勤務日数/週</label>
+              <label className="mb-1 block text-xs text-paper-dim">{t('common.desiredWorkDaysPerWeek')}</label>
               <input
                 type="number"
                 min={0}
@@ -227,7 +228,7 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-paper-dim">連勤上限(日)</label>
+              <label className="mb-1 block text-xs text-paper-dim">{t('common.maxConsecutiveDays')}</label>
               <input
                 type="number"
                 min={1}
@@ -240,7 +241,7 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-paper-dim">希望休み曜日</label>
+            <label className="mb-1 block text-xs text-paper-dim">{t('common.desiredDaysOff')}</label>
             <div className="flex flex-wrap gap-1.5">
               {WEEKDAYS.map((day) => (
                 <label
@@ -257,7 +258,7 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
                     onChange={() => toggleDayOff(day)}
                     className="hidden"
                   />
-                  {day}
+                  {weekdayLabel(day, locale)}
                 </label>
               ))}
             </div>
@@ -270,7 +271,7 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
               onChange={(e) => setHasShurikenQualification(e.target.checked)}
               className="h-3.5 w-3.5 accent-gold"
             />
-            資格：手裏剣・忍具取り扱い研修修了(修行アトラクションに必要)
+            {t('employeeModal.qualificationCheckbox')}
           </label>
 
           <label className="flex items-center gap-2 text-xs text-paper-dim">
@@ -280,7 +281,7 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
               onChange={(e) => setCafeKitchenOk(e.target.checked)}
               className="h-3.5 w-3.5 accent-gold"
             />
-            忍者茶屋の厨房対応が可能
+            {t('employeeModal.cafeKitchenCheckbox')}
           </label>
 
           <label className="flex items-center gap-2 text-xs text-paper-dim">
@@ -290,16 +291,16 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
               onChange={(e) => setIsTrainee(e.target.checked)}
               className="h-3.5 w-3.5 accent-gold"
             />
-            研修中(人件費は「研修中時給」が優先適用されます)
+            {t('employeeModal.traineeCheckbox')}
           </label>
 
           <div>
-            <label className="mb-1 block text-xs text-paper-dim">備考(求人用の雇用形態表記など)</label>
+            <label className="mb-1 block text-xs text-paper-dim">{t('employeeModal.employmentTypeNote')}</label>
             <input
               type="text"
               value={employmentType}
               onChange={(e) => setEmploymentType(e.target.value)}
-              placeholder="契約社員"
+              placeholder={t('employeeModal.employmentTypePlaceholder')}
               className="w-full rounded-md border border-paper/20 bg-void px-3 py-2 text-sm text-paper focus:border-gold focus:outline-none"
             />
           </div>
@@ -314,7 +315,7 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
                   className="h-3.5 w-3.5 accent-gold"
                 />
                 <KeyRound size={13} className="text-gold" />
-                ログインアカウントも作成する(任意)
+                {t('employeeModal.createAccountCheckbox')}
               </label>
               {createAccount && (
                 <div className="mt-3 grid grid-cols-2 gap-3">
@@ -322,7 +323,7 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
                     type="email"
                     value={accountEmail}
                     onChange={(e) => setAccountEmail(e.target.value)}
-                    placeholder="メールアドレス"
+                    placeholder={t('employeeModal.accountEmailPlaceholder')}
                     required={createAccount}
                     className="rounded-md border border-paper/20 bg-void px-2 py-1.5 text-sm text-paper focus:border-gold focus:outline-none"
                   />
@@ -330,7 +331,7 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
                     type="text"
                     value={accountPassword}
                     onChange={(e) => setAccountPassword(e.target.value)}
-                    placeholder="初期パスワード"
+                    placeholder={t('employeeModal.accountPasswordPlaceholder')}
                     required={createAccount}
                     className="rounded-md border border-paper/20 bg-void px-2 py-1.5 text-sm text-paper focus:border-gold focus:outline-none"
                   />
@@ -351,7 +352,7 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
                 className="flex items-center gap-1 rounded-md border border-seal/50 px-3 py-1.5 text-xs text-seal-bright transition hover:bg-seal/10"
               >
                 <Trash2 size={13} />
-                退職(削除)
+                {t('employeeModal.delete')}
               </button>
             ) : (
               <span />
@@ -362,13 +363,13 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
                 onClick={onClose}
                 className="rounded-md border border-paper/20 px-3 py-1.5 text-xs text-paper-dim hover:text-paper"
               >
-                キャンセル
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 className="rounded-md border border-gold bg-gold/10 px-4 py-1.5 text-xs font-medium text-gold transition hover:bg-gold/20"
               >
-                保存
+                {t('common.save')}
               </button>
             </div>
           </div>

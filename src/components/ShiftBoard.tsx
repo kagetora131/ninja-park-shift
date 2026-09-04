@@ -2,12 +2,13 @@ import { useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Sparkles } from 'lucide-react';
 import { NinjaAvatar } from './NinjaAvatar';
 import { PostCoveragePanel } from './PostCoveragePanel';
-import { FACILITIES, FACILITY_COLOR, FACILITY_ORDER, capableFacilities } from '../data/facilities';
+import { FACILITY_COLOR, FACILITY_ORDER, FACILITIES, capableFacilities } from '../data/facilities';
 import { WEEKDAYS } from '../data/constants';
 import { SHIFT_PATTERNS } from '../data/shiftPatterns';
-import { formatDateJp, weekdayJp } from '../lib/format';
+import { formatDateJp } from '../lib/format';
 import { MOOD_COLOR } from '../lib/mood';
 import { readShiftDragPayload, setShiftDragPayload } from '../lib/dragDrop';
+import { facilityShortLabel, formatMonthLabel, translateReason, weekdayLabel } from '../lib/i18n';
 import { useAutoScrollOnDrag } from '../hooks/useAutoScrollOnDrag';
 import {
   CALENDAR_END_MONTH,
@@ -49,7 +50,7 @@ export function ShiftBoard({
   onAutoAssign,
 }: ShiftBoardProps) {
   useAutoScrollOnDrag();
-  const { employeeName, facilityName } = useLabelContext();
+  const { locale, employeeName, facilityName, t } = useLabelContext();
   const [view, setView] = useState({ year: CALENDAR_START_YEAR, month: CALENDAR_START_MONTH });
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const [highlightDate, setHighlightDate] = useState<string | null>(null);
@@ -106,7 +107,12 @@ export function ShiftBoard({
         note: existing?.facility === payload.facility ? existing.note : undefined,
       });
       if (!capableFacilities(targetEmployee).includes(payload.facility)) {
-        showNotice(`${employeeName(targetEmployee)}は${facilityName(payload.facility)}が未経験です。無理のないシフトか確認しましょう。`);
+        showNotice(
+          t('shiftBoard.unfamiliarNotice', {
+            employee: employeeName(targetEmployee),
+            facility: facilityName(payload.facility),
+          }),
+        );
       }
       return;
     }
@@ -141,7 +147,10 @@ export function ShiftBoard({
       ]);
       const sourceEmployee = employeeMap.get(source.employeeId);
       showNotice(
-        `${sourceEmployee ? employeeName(sourceEmployee) : ''}と${employeeName(targetEmployee)}の配置を入れ替えました`,
+        t('shiftBoard.swapNotice', {
+          a: sourceEmployee ? employeeName(sourceEmployee) : '',
+          b: employeeName(targetEmployee),
+        }),
       );
     } else {
       await onRemoveShift(source.id);
@@ -163,12 +172,12 @@ export function ShiftBoard({
     try {
       const result = await onAutoAssign(dates);
       if (result.created.length === 0 && result.shortfalls.length === 0) {
-        showNotice('この月はすでにポスト設定の必要人数を満たしています');
+        showNotice(t('shiftBoard.autoAssignNone'));
       } else if (result.shortfalls.length === 0) {
-        showNotice(`${result.created.length}件のシフトを自動配置しました`);
+        showNotice(t('shiftBoard.autoAssignSuccess', { n: result.created.length }));
       } else {
         showNotice(
-          `${result.created.length}件を自動配置しましたが、${result.shortfalls.length}件は対応可能な忍者が見つかりませんでした`,
+          t('shiftBoard.autoAssignPartial', { created: result.created.length, missing: result.shortfalls.length }),
         );
       }
     } finally {
@@ -188,9 +197,7 @@ export function ShiftBoard({
           >
             <ChevronLeft size={16} />
           </button>
-          <p className="font-mincho text-base font-bold text-paper">
-            {view.year}年{view.month}月
-          </p>
+          <p className="font-mincho text-base font-bold text-paper">{formatMonthLabel(view.year, view.month, locale)}</p>
           <button
             type="button"
             onClick={() => goMonth(1)}
@@ -208,10 +215,10 @@ export function ShiftBoard({
             className="flex items-center gap-1.5 rounded-full border border-gold/50 px-3 py-1.5 text-xs text-gold transition hover:bg-gold/10 disabled:opacity-50"
           >
             <Sparkles size={13} />
-            {autoAssigning ? '自動配置中...' : 'スタッフの自動配置'}
+            {autoAssigning ? t('shiftBoard.autoAssigning') : t('shiftBoard.autoAssign')}
           </button>
           <div className="flex items-center gap-2 rounded-full border border-jade/40 bg-jade/10 px-3 py-1.5 text-xs text-jade">
-            今月の黒字日数：{blackDaysInView} / {dates.length}日
+            {t('shiftBoard.blackDays', { black: blackDaysInView, total: dates.length })}
           </div>
         </div>
       </div>
@@ -228,7 +235,7 @@ export function ShiftBoard({
             <thead>
               <tr>
                 <th className="sticky left-0 top-0 z-30 min-w-[210px] border-b border-r border-paper/10 bg-void-soft px-2 py-2 text-left font-medium text-paper-dim">
-                  スタッフ
+                  {t('shiftBoard.staffHeader')}
                 </th>
                 {dates.map((date) => {
                   const dayFinance = financeByDate.get(date);
@@ -248,7 +255,7 @@ export function ShiftBoard({
                           dayFinance?.isBlack ? 'bg-jade' : 'bg-seal'
                         }`}
                       />
-                      {formatDateJp(date, weekdayJp(date))}
+                      {formatDateJp(date, locale)}
                     </th>
                   );
                 })}
@@ -268,7 +275,7 @@ export function ShiftBoard({
                         <div className="min-w-0">
                           <p className="truncate text-xs font-medium text-paper">{employeeName(emp)}</p>
                           <p className="text-[10px] text-paper-dim">
-                            週{emp.desiredWorkDaysPerWeek}日希望・連勤上限{emp.maxConsecutiveDays}日
+                            {t('shiftBoard.desiredWorkAndMax', { days: emp.desiredWorkDaysPerWeek, max: emp.maxConsecutiveDays })}
                           </p>
                         </div>
                       </div>
@@ -276,15 +283,16 @@ export function ShiftBoard({
                       <div className="mt-1.5 flex gap-[3px]">
                         {WEEKDAYS.map((day) => {
                           const isOff = emp.desiredDaysOff.includes(day);
+                          const dayLabel = weekdayLabel(day, locale);
                           return (
                             <span
                               key={day}
-                              title={isOff ? `${day}曜は希望休み` : day}
+                              title={isOff ? t('shiftBoard.offWeekdayTitle', { day: dayLabel }) : dayLabel}
                               className={`flex h-4 w-4 items-center justify-center rounded-sm text-[9px] ${
                                 isOff ? 'bg-seal/25 text-seal-bright' : 'bg-void text-paper-dim/60'
                               }`}
                             >
-                              {day}
+                              {locale === 'ja' ? day : dayLabel.slice(0, 1)}
                             </span>
                           );
                         })}
@@ -298,7 +306,11 @@ export function ShiftBoard({
                               key={f}
                               draggable
                               onDragStart={(e) => setShiftDragPayload(e, { kind: 'facility', employeeId: emp.id, facility: f })}
-                              title={isMain ? `所属：${facilityName(f)}(ドラッグして配置)` : `応援可：${facilityName(f)}(ドラッグして配置)`}
+                              title={
+                                isMain
+                                  ? t('shiftBoard.mainFacilityBadge', { facility: facilityName(f) })
+                                  : t('shiftBoard.helpFacilityBadge', { facility: facilityName(f) })
+                              }
                               className={`cursor-grab select-none rounded-full px-1.5 py-[1px] text-[9px] transition active:cursor-grabbing ${
                                 isMain ? 'text-void' : 'border border-dashed text-paper-dim'
                               }`}
@@ -308,7 +320,7 @@ export function ShiftBoard({
                                   : { borderColor: FACILITY_COLOR[f], color: FACILITY_COLOR[f] }
                               }
                             >
-                              {FACILITIES[f].shortName}
+                              {facilityShortLabel(f, FACILITIES[f].shortName, locale)}
                             </span>
                           );
                         })}
@@ -365,7 +377,7 @@ export function ShiftBoard({
                             onDragStart={(e) => setShiftDragPayload(e, { kind: 'shift', shiftId: shift.id })}
                             onClick={() => onEditShift(shift)}
                             title={`${facilityName(shift.facility)} ${shift.start}–${shift.end}${
-                              mood ? ` / ${mood.reasons.join(' / ')}` : ''
+                              mood ? ` / ${mood.reasons.map((r) => translateReason(r, locale)).join(' / ')}` : ''
                             }`}
                             className="relative flex h-9 w-full cursor-grab flex-col items-center justify-center gap-0.5 rounded-sm border-l-4 bg-void/60 transition active:cursor-grabbing hover:brightness-125"
                             style={{ borderLeftColor: FACILITY_COLOR[shift.facility] }}
@@ -392,9 +404,7 @@ export function ShiftBoard({
         <PostCoveragePanel dates={dates} shifts={shifts} postRequirements={postRequirements} onSelectDate={handleSelectCoverageDate} />
       </div>
 
-      <p className="text-[11px] text-paper-dim">
-        施設バッジをセルへドラッグして新規配置、配置済みセルをドラッグすると別の日付・従業員へ移動(空きセル)または入れ替え(配置済みセル)ができます。クリックで詳細編集。右上のドットは表情(緑=上機嫌／灰=普通／金=疲れ気味／朱=不満)。
-      </p>
+      <p className="text-[11px] text-paper-dim">{t('shiftBoard.legend')}</p>
     </div>
   );
 }

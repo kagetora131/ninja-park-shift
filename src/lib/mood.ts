@@ -1,5 +1,5 @@
 import { shiftDate } from './format';
-import type { Employee, MoodResult, ShiftEntry } from '../types';
+import type { Employee, MoodReason, MoodResult, ShiftEntry } from '../types';
 
 const HELP_WINDOW = 5;
 const SEVERE_OVERRUN = 3;
@@ -45,48 +45,48 @@ export function computeMoodForShift(
     targetShift.facility !== employee.mainFacility && !employee.crossTrained.includes(targetShift.facility);
   const overrun = consecutiveDays - employee.maxConsecutiveDays;
 
-  const reasons: string[] = [];
+  const reasons: MoodReason[] = [];
 
   if (isRequestedOffDate) {
-    reasons.push('カレンダーで指定した希望休みの日に出勤している');
+    reasons.push({ key: 'offDateRequested' });
     return { mood: 'unhappy', reasons, consecutiveDays, helpCountRecent };
   }
   if (isRequestedDayOff) {
-    reasons.push('希望休みの曜日に出勤している');
+    reasons.push({ key: 'offWeekdayRequested' });
     return { mood: 'unhappy', reasons, consecutiveDays, helpCountRecent };
   }
   if (overrun >= SEVERE_OVERRUN) {
-    reasons.push(`連勤上限(${employee.maxConsecutiveDays}日)を${overrun}日超過`);
+    reasons.push({ key: 'severeOverrun', params: { max: employee.maxConsecutiveDays, overrun } });
     return { mood: 'unhappy', reasons, consecutiveDays, helpCountRecent };
   }
   if (!targetShift.isDesired && isFullyUnfamiliar) {
-    reasons.push('希望と異なり、未経験の施設へ応援に入っている');
+    reasons.push({ key: 'unfamiliarHelpUndesired' });
     return { mood: 'unhappy', reasons, consecutiveDays, helpCountRecent };
   }
 
   if (consecutiveDays >= 4) {
-    reasons.push(`${consecutiveDays}連勤目`);
+    reasons.push({ key: 'consecutiveDays', params: { n: consecutiveDays } });
     return { mood: 'tired', reasons, consecutiveDays, helpCountRecent };
   }
   if (overrun >= 1) {
-    reasons.push(`連勤上限(${employee.maxConsecutiveDays}日)を超過`);
+    reasons.push({ key: 'overrun', params: { max: employee.maxConsecutiveDays } });
     return { mood: 'tired', reasons, consecutiveDays, helpCountRecent };
   }
   if (helpCountRecent >= 2) {
-    reasons.push('不慣れな施設への応援が続いている');
+    reasons.push({ key: 'unfamiliarHelpContinuing' });
     return { mood: 'tired', reasons, consecutiveDays, helpCountRecent };
   }
 
   if (!targetShift.isDesired) {
-    reasons.push('希望と少し異なるシフト調整あり');
+    reasons.push({ key: 'adjustedFromDesired' });
     return { mood: 'neutral', reasons, consecutiveDays, helpCountRecent };
   }
   if (helpCountRecent === 1) {
-    reasons.push('他施設への応援が1回ある');
+    reasons.push({ key: 'helpOnce' });
     return { mood: 'neutral', reasons, consecutiveDays, helpCountRecent };
   }
 
-  reasons.push('希望通りのシフトで、連勤も無理がない');
+  reasons.push({ key: 'allGood' });
   return { mood: 'happy', reasons, consecutiveDays, helpCountRecent };
 }
 
@@ -112,13 +112,6 @@ export function computeMoodMap(
 
   return result;
 }
-
-export const MOOD_LABEL: Record<string, string> = {
-  happy: '上機嫌',
-  neutral: '普通',
-  tired: '疲れ気味',
-  unhappy: '不満',
-};
 
 export const MOOD_COLOR: Record<string, string> = {
   happy: 'var(--color-jade)',

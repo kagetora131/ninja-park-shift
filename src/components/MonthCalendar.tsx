@@ -1,5 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { formatMonthLabel, weekdayLabel } from '../lib/i18n';
+import { useLabelContext } from '../hooks/LabelContext';
 
 const WEEKDAY_HEADERS = ['日', '月', '火', '水', '木', '金', '土'];
 
@@ -47,6 +49,7 @@ export function MonthCalendar({
   onDayClick,
   renderBadge,
 }: MonthCalendarProps) {
+  const { locale } = useLabelContext();
   const total = daysInMonth(year, month);
   const lead = firstWeekday(year, month);
   const cells: (number | null)[] = [...Array(lead).fill(null), ...Array.from({ length: total }, (_, i) => i + 1)];
@@ -71,9 +74,7 @@ export function MonthCalendar({
         >
           <ChevronLeft size={14} />
         </button>
-        <p className="font-mincho text-sm font-bold text-paper">
-          {year}年{month}月
-        </p>
+        <p className="font-mincho text-sm font-bold text-paper">{formatMonthLabel(year, month, locale)}</p>
         <button
           type="button"
           onClick={goNext}
@@ -86,7 +87,7 @@ export function MonthCalendar({
       <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-paper-dim">
         {WEEKDAY_HEADERS.map((w) => (
           <div key={w} className="py-1">
-            {w}
+            {weekdayLabel(w, locale)}
           </div>
         ))}
         {cells.map((day, i) => {

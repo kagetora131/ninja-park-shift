@@ -19,7 +19,7 @@ export interface AutoAssignResult {
 }
 
 function pickDefaultPattern(facility: FacilityId) {
-  return SHIFT_PATTERNS[facility].find((p) => p.label.startsWith('通し')) ?? SHIFT_PATTERNS[facility][0];
+  return SHIFT_PATTERNS[facility].find((p) => p.kind === 'full') ?? SHIFT_PATTERNS[facility][0];
 }
 
 /** `workDates` に基づき、`date` の前日から遡って何日連続で勤務しているかを数える。 */

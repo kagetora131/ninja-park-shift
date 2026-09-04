@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Trash2, X } from 'lucide-react';
 import { FACILITIES, FACILITY_ORDER } from '../data/facilities';
 import { SHIFT_PATTERNS } from '../data/shiftPatterns';
-import { formatDateJp, weekdayJp } from '../lib/format';
+import { formatDateJp } from '../lib/format';
+import { facilityShortLabel } from '../lib/i18n';
+import { useLabelContext } from '../hooks/LabelContext';
 import type { NewShiftInput } from '../hooks/useShiftStore';
 import type { Employee, FacilityId, ShiftEntry } from '../types';
 
@@ -23,6 +25,7 @@ interface ShiftEditModalProps {
 }
 
 export function ShiftEditModal({ draft, employees, onClose, onSave, onDelete }: ShiftEditModalProps) {
+  const { locale, employeeName, facilityName, t } = useLabelContext();
   const existing = draft.existingShift;
   const [employeeId, setEmployeeId] = useState(existing?.employeeId ?? draft.employeeId ?? employees[0]?.id ?? '');
   const [facility, setFacility] = useState<FacilityId>(draft.facility);
@@ -65,9 +68,9 @@ export function ShiftEditModal({ draft, employees, onClose, onSave, onDelete }: 
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h2 className="font-mincho text-base font-bold text-paper">
-              {draft.mode === 'create' ? '配置を追加' : 'シフトを編集'}
+              {draft.mode === 'create' ? t('shiftEditModal.createHeading') : t('shiftEditModal.editHeading')}
             </h2>
-            <p className="text-xs text-paper-dim">{formatDateJp(draft.date, weekdayJp(draft.date))}</p>
+            <p className="text-xs text-paper-dim">{formatDateJp(draft.date, locale)}</p>
           </div>
           <button type="button" onClick={onClose} className="text-paper-dim hover:text-paper">
             <X size={18} />
@@ -76,7 +79,7 @@ export function ShiftEditModal({ draft, employees, onClose, onSave, onDelete }: 
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs text-paper-dim">担当者</label>
+            <label className="mb-1 block text-xs text-paper-dim">{t('shiftEditModal.assignee')}</label>
             <select
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
@@ -84,20 +87,20 @@ export function ShiftEditModal({ draft, employees, onClose, onSave, onDelete }: 
             >
               {employees.map((emp) => (
                 <option key={emp.id} value={emp.id}>
-                  {emp.name}（{FACILITIES[emp.mainFacility].shortName}所属）
+                  {employeeName(emp)}（{facilityShortLabel(emp.mainFacility, FACILITIES[emp.mainFacility].shortName, locale)}）
                 </option>
               ))}
             </select>
             {selectedEmployee && facility !== selectedEmployee.mainFacility && (
               <p className="mt-1 text-[11px] text-gold">
-                ※本来は{FACILITIES[selectedEmployee.mainFacility].name}所属の応援配置になります
-                {!selectedEmployee.crossTrained.includes(facility) && '（未経験の施設）'}
+                {t('shiftEditModal.helpNotice', { facility: facilityName(selectedEmployee.mainFacility) })}
+                {!selectedEmployee.crossTrained.includes(facility) && t('shiftEditModal.unfamiliarSuffix')}
               </p>
             )}
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-paper-dim">配置施設</label>
+            <label className="mb-1 block text-xs text-paper-dim">{t('shiftEditModal.facility')}</label>
             <div className="flex gap-2">
               {FACILITY_ORDER.map((f) => (
                 <button
@@ -113,14 +116,14 @@ export function ShiftEditModal({ draft, employees, onClose, onSave, onDelete }: 
                       : 'border-paper/20 text-paper-dim hover:border-paper/40'
                   }`}
                 >
-                  {FACILITIES[f].shortName}
+                  {facilityShortLabel(f, FACILITIES[f].shortName, locale)}
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs text-paper-dim">よく使う時間帯</label>
+            <label className="mb-1 block text-xs text-paper-dim">{t('shiftEditModal.commonTimes')}</label>
             <div className="flex flex-wrap gap-1.5">
               {SHIFT_PATTERNS[facility].map((p) => (
                 <button
@@ -129,7 +132,7 @@ export function ShiftEditModal({ draft, employees, onClose, onSave, onDelete }: 
                   onClick={() => applyPattern(p)}
                   className="rounded-full border border-paper/20 px-2.5 py-1 text-[11px] text-paper-dim transition hover:border-gold hover:text-gold"
                 >
-                  {p.label}
+                  {locale === 'en' ? p.labelEn : p.label}
                 </button>
               ))}
             </div>
@@ -137,7 +140,7 @@ export function ShiftEditModal({ draft, employees, onClose, onSave, onDelete }: 
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="mb-1 block text-xs text-paper-dim">開始</label>
+              <label className="mb-1 block text-xs text-paper-dim">{t('shiftEditModal.start')}</label>
               <input
                 type="time"
                 value={start}
@@ -146,7 +149,7 @@ export function ShiftEditModal({ draft, employees, onClose, onSave, onDelete }: 
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-paper-dim">終了</label>
+              <label className="mb-1 block text-xs text-paper-dim">{t('shiftEditModal.end')}</label>
               <input
                 type="time"
                 value={end}
@@ -155,7 +158,7 @@ export function ShiftEditModal({ draft, employees, onClose, onSave, onDelete }: 
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-paper-dim">休憩(分)</label>
+              <label className="mb-1 block text-xs text-paper-dim">{t('shiftEditModal.breakMinutes')}</label>
               <input
                 type="number"
                 min={0}
@@ -174,16 +177,16 @@ export function ShiftEditModal({ draft, employees, onClose, onSave, onDelete }: 
               onChange={(e) => setIsDesired(e.target.checked)}
               className="h-3.5 w-3.5 accent-gold"
             />
-            本人の希望通りのシフトである
+            {t('shiftEditModal.isDesired')}
           </label>
 
           <div>
-            <label className="mb-1 block text-xs text-paper-dim">備考</label>
+            <label className="mb-1 block text-xs text-paper-dim">{t('shiftEditModal.note')}</label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={2}
-              placeholder="例：繁忙のため応援 など"
+              placeholder={t('shiftEditModal.notePlaceholder')}
               className="w-full resize-none rounded-md border border-paper/20 bg-void px-3 py-2 text-sm text-paper focus:border-gold focus:outline-none"
             />
           </div>
@@ -199,7 +202,7 @@ export function ShiftEditModal({ draft, employees, onClose, onSave, onDelete }: 
                 className="flex items-center gap-1 rounded-md border border-seal/50 px-3 py-1.5 text-xs text-seal-bright transition hover:bg-seal/10"
               >
                 <Trash2 size={13} />
-                削除
+                {t('common.delete')}
               </button>
             ) : (
               <span />
@@ -210,13 +213,13 @@ export function ShiftEditModal({ draft, employees, onClose, onSave, onDelete }: 
                 onClick={onClose}
                 className="rounded-md border border-paper/20 px-3 py-1.5 text-xs text-paper-dim hover:text-paper"
               >
-                キャンセル
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 className="rounded-md border border-gold bg-gold/10 px-4 py-1.5 text-xs font-medium text-gold transition hover:bg-gold/20"
               >
-                保存
+                {t('common.save')}
               </button>
             </div>
           </div>

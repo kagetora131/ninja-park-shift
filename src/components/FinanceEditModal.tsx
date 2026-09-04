@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { FACILITIES } from '../data/facilities';
-import { formatDateJp, weekdayJp } from '../lib/format';
+import { formatDateJp } from '../lib/format';
+import { useLabelContext } from '../hooks/LabelContext';
 import type { FinanceInput } from '../hooks/useShiftStore';
 import type { FacilityId } from '../types';
 
@@ -18,6 +18,7 @@ interface FinanceEditModalProps {
 }
 
 export function FinanceEditModal({ draft, onClose, onSave }: FinanceEditModalProps) {
+  const { locale, facilityName, t } = useLabelContext();
   const [revenue, setRevenue] = useState(draft.revenue);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,9 +35,9 @@ export function FinanceEditModal({ draft, onClose, onSave }: FinanceEditModalPro
       >
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="font-mincho text-base font-bold text-paper">売上を編集</h2>
+            <h2 className="font-mincho text-base font-bold text-paper">{t('financeModal.heading')}</h2>
             <p className="text-xs text-paper-dim">
-              {formatDateJp(draft.date, weekdayJp(draft.date))} ／ {FACILITIES[draft.facility].name}
+              {formatDateJp(draft.date, locale)} ／ {facilityName(draft.facility)}
             </p>
           </div>
           <button type="button" onClick={onClose} className="text-paper-dim hover:text-paper">
@@ -46,7 +47,7 @@ export function FinanceEditModal({ draft, onClose, onSave }: FinanceEditModalPro
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs text-paper-dim">売上(円)</label>
+            <label className="mb-1 block text-xs text-paper-dim">{t('financeModal.revenueLabel')}</label>
             <input
               type="number"
               min={0}
@@ -56,9 +57,7 @@ export function FinanceEditModal({ draft, onClose, onSave }: FinanceEditModalPro
               className="w-full rounded-md border border-paper/20 bg-void px-3 py-2 text-sm text-paper focus:border-gold focus:outline-none"
             />
           </div>
-          <p className="text-[11px] text-paper-dim">
-            人件費はシフト実働時間と「給与・ポスト設定」の給与から自動計算されます。
-          </p>
+          <p className="text-[11px] text-paper-dim">{t('financeModal.autoCalcNote')}</p>
 
           <div className="flex justify-end gap-2 pt-1">
             <button
@@ -66,13 +65,13 @@ export function FinanceEditModal({ draft, onClose, onSave }: FinanceEditModalPro
               onClick={onClose}
               className="rounded-md border border-paper/20 px-3 py-1.5 text-xs text-paper-dim hover:text-paper"
             >
-              キャンセル
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               className="rounded-md border border-gold bg-gold/10 px-4 py-1.5 text-xs font-medium text-gold transition hover:bg-gold/20"
             >
-              保存
+              {t('common.save')}
             </button>
           </div>
         </form>
