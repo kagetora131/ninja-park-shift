@@ -18,6 +18,14 @@ function loadInitialLocale(): Locale {
   } catch {
     // localStorageが使えない環境では端末の言語設定にフォールバックする
   }
+  // このアプリでの選択が無ければ、ホームページの表示言語(同一オリジンの
+  // localStorageを共有)を端末の言語設定より優先する。
+  try {
+    const hpLang = window.localStorage.getItem('kagetora-lang');
+    if (hpLang === 'ja' || hpLang === 'en') return hpLang;
+  } catch {
+    // ignore
+  }
   // 保存済みの選択が無い初回訪問時は、端末の言語設定から自動判定する。
   // 日本語系(ja, ja-JP等)以外は全て英語をデフォルトにする
   // (フランス語・スペイン語など未対応言語の訪問者にも英語を表示するため)。
