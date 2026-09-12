@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, History, Plus, Sparkles } from 'lucide-react';
 import { NinjaAvatar } from './NinjaAvatar';
 import { PostCoveragePanel } from './PostCoveragePanel';
+import { AutoAssignPreviewModal } from './AutoAssignPreviewModal';
 import { FACILITY_COLOR, FACILITY_ORDER, FACILITIES, capableFacilities } from '../data/facilities';
 import { WEEKDAYS } from '../data/constants';
 import { SHIFT_PATTERNS } from '../data/shiftPatterns';
@@ -9,6 +10,7 @@ import { formatDateJp } from '../lib/format';
 import { MOOD_COLOR } from '../lib/mood';
 import { readShiftDragPayload, setShiftDragPayload } from '../lib/dragDrop';
 import { facilityShortLabel, formatMonthLabel, translateReason, weekdayLabel } from '../lib/i18n';
+import { autoAssignShifts } from '../lib/autoAssign';
 import { useAutoScrollOnDrag } from '../hooks/useAutoScrollOnDrag';
 import {
   CALENDAR_END_MONTH,
@@ -21,8 +23,17 @@ import {
 import { useLabelContext } from '../hooks/LabelContext';
 import type { ShiftDraft } from './ShiftEditModal';
 import type { NewShiftInput } from '../hooks/useShiftStore';
-import type { AutoAssignResult } from '../lib/autoAssign';
+import type { AutoAssignCandidate, AutoAssignResult } from '../lib/autoAssign';
 import type { DailyFinance, Employee, MoodResult, PostRequirements, ShiftEntry } from '../types';
+
+interface AutoAssignHistoryEntry {
+  id: string;
+  appliedAt: Date;
+  ids: string[];
+  count: number;
+  undone: boolean;
+  undoing: boolean;
+}
 
 interface ShiftBoardProps {
   employees: Employee[];
@@ -34,7 +45,8 @@ interface ShiftBoardProps {
   onCreateShift: (draft: ShiftDraft) => void;
   onAssignShift: (input: NewShiftInput) => Promise<void> | void;
   onRemoveShift: (id: string) => Promise<void> | void;
-  onAutoAssign: (dates: string[]) => Promise<AutoAssignResult>;
+  onApplyAutoAssign: (created: AutoAssignCandidate[]) => Promise<string[]>;
+  onUndoAutoAssign: (ids: string[]) => Promise<void>;
 }
 
 export function ShiftBoard({
@@ -47,7 +59,8 @@ export function ShiftBoard({
   onCreateShift,
   onAssignShift,
   onRemoveShift,
-  onAutoAssign,
+  onApplyAutoAssign,
+  onUndoAutoAssign,
 }: ShiftBoardProps) {
   useAutoScrollOnDrag();
   const { locale, employeeName, facilityName, t } = useLabelContext();
@@ -55,7 +68,10 @@ export function ShiftBoard({
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const [highlightDate, setHighlightDate] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [autoAssigning, setAutoAssigning] = useState(false);
+  const [previewResult, setPreviewResult] = useState<AutoAssignResult | null>(null);
+  const [applying, setApplying] = useState(false);
+  const [history, setHistory] = useState<AutoAssignHistoryEntry[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const columnRefs = useRef(new Map<string, HTMLTableCellElement>());
 
   const dates = datesInMonth(view.year, view.month);
@@ -167,22 +183,34 @@ export function ShiftBoard({
     }
   };
 
-  const handleAutoAssign = async () => {
-    setAutoAssigning(true);
+  const handleOpenAutoAssignPreview = () => {
+    const result = autoAssignShifts(employees, shifts, postRequirements, dates);
+    setPreviewResult(result);
+  };
+
+  const handleConfirmAutoAssign = async () => {
+    if (!previewResult) return;
+    setApplying(true);
     try {
-      const result = await onAutoAssign(dates);
-      if (result.created.length === 0 && result.shortfalls.length === 0) {
-        showNotice(t('shiftBoard.autoAssignNone'));
-      } else if (result.shortfalls.length === 0) {
-        showNotice(t('shiftBoard.autoAssignSuccess', { n: result.created.length }));
-      } else {
-        showNotice(
-          t('shiftBoard.autoAssignPartial', { created: result.created.length, missing: result.shortfalls.length }),
-        );
-      }
+      const ids = await onApplyAutoAssign(previewResult.created);
+      setHistory((prev) => [
+        { id: `${Date.now()}`, appliedAt: new Date(), ids, count: previewResult.created.length, undone: false, undoing: false },
+        ...prev,
+      ]);
+      showNotice(t('autoAssign.appliedNotice', { n: previewResult.created.length }));
+      setPreviewResult(null);
     } finally {
-      setAutoAssigning(false);
+      setApplying(false);
     }
+  };
+
+  const handleUndoAutoAssign = async (entryId: string) => {
+    const entry = history.find((h) => h.id === entryId);
+    if (!entry || entry.undone || entry.undoing) return;
+    setHistory((prev) => prev.map((h) => (h.id === entryId ? { ...h, undoing: true } : h)));
+    await onUndoAutoAssign(entry.ids);
+    setHistory((prev) => prev.map((h) => (h.id === entryId ? { ...h, undone: true, undoing: false } : h)));
+    showNotice(t('autoAssign.undoneNotice', { n: entry.count }));
   };
 
   return (
@@ -207,16 +235,56 @@ export function ShiftBoard({
             <ChevronRight size={16} />
           </button>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={handleAutoAssign}
-            disabled={autoAssigning}
-            className="flex items-center gap-1.5 rounded-full border border-gold/50 px-3 py-1.5 text-xs text-gold transition hover:bg-gold/10 disabled:opacity-50"
+            onClick={handleOpenAutoAssignPreview}
+            className="flex items-center gap-1.5 rounded-full border border-gold/50 px-3 py-1.5 text-xs text-gold transition hover:bg-gold/10"
           >
             <Sparkles size={13} />
-            {autoAssigning ? t('shiftBoard.autoAssigning') : t('shiftBoard.autoAssign')}
+            {t('shiftBoard.autoAssign')}
           </button>
+          {history.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setHistoryOpen((v) => !v)}
+              className="flex items-center gap-1.5 rounded-full border border-paper/20 px-3 py-1.5 text-xs text-paper-dim transition hover:border-gold hover:text-gold"
+            >
+              <History size={13} />
+              {t('autoAssign.historyHeading')}
+            </button>
+          )}
+          {historyOpen && history.length > 0 && (
+            <div className="absolute right-0 top-full z-30 mt-2 w-72 rounded-xl border border-paper/15 bg-void-soft p-3 shadow-2xl">
+              <p className="mb-2 text-xs font-medium text-paper">{t('autoAssign.historyHeading')}</p>
+              <div className="space-y-1.5">
+                {history.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-paper/10 bg-void/40 px-2.5 py-1.5 text-[11px]"
+                  >
+                    <span className={entry.undone ? 'text-paper-dim/50 line-through' : 'text-paper-dim'}>
+                      {t('autoAssign.historyEntry', {
+                        time: entry.appliedAt.toLocaleTimeString(locale === 'ja' ? 'ja-JP' : 'en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        }),
+                        n: entry.count,
+                      })}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleUndoAutoAssign(entry.id)}
+                      disabled={entry.undone || entry.undoing}
+                      className="shrink-0 rounded-md border border-seal/40 px-2 py-0.5 text-seal-bright transition hover:bg-seal/10 disabled:opacity-40"
+                    >
+                      {entry.undone ? t('autoAssign.undone') : entry.undoing ? t('autoAssign.undoing') : t('autoAssign.undo')}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="flex items-center gap-2 rounded-full border border-jade/40 bg-jade/10 px-3 py-1.5 text-xs text-jade">
             {t('shiftBoard.blackDays', { black: blackDaysInView, total: dates.length })}
           </div>
@@ -405,6 +473,16 @@ export function ShiftBoard({
       </div>
 
       <p className="text-[11px] text-paper-dim">{t('shiftBoard.legend')}</p>
+
+      {previewResult && (
+        <AutoAssignPreviewModal
+          result={previewResult}
+          employees={employees}
+          applying={applying}
+          onConfirm={handleConfirmAutoAssign}
+          onCancel={() => setPreviewResult(null)}
+        />
+      )}
     </div>
   );
 }

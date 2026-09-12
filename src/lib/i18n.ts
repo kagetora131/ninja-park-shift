@@ -306,6 +306,28 @@ const STRINGS = {
 
   'avatar.helpBadgeTitle': { ja: '本来は{facility}所属', en: 'Normally at {facility}' },
 
+  'autoAssign.previewHeading': { ja: '自動配置プレビュー', en: 'Auto-assign Preview' },
+  'autoAssign.candidateCount': { ja: '追加候補 {n}件', en: '{n} candidate(s) to add' },
+  'autoAssign.unresolvedCount': { ja: '未解決の不足 {n}件', en: '{n} unresolved shortfall(s)' },
+  'autoAssign.noCandidates': {
+    ja: 'この期間はすでにポスト設定の必要人数を満たしています',
+    en: 'This period already meets the required staffing levels.',
+  },
+  'autoAssign.homeFacility': { ja: '所属施設', en: 'Home facility' },
+  'autoAssign.helpFacility': { ja: '応援', en: 'Helping out' },
+  'autoAssign.forcedOffDay': { ja: '希望休みの曜日', en: 'Requested day off' },
+  'autoAssign.consecutiveDays': { ja: '{n}連勤目', en: 'Day {n} of consecutive work' },
+  'autoAssign.qualified': { ja: '資格保有', en: 'Certified' },
+  'autoAssign.apply': { ja: '反映する', en: 'Apply' },
+  'autoAssign.applying': { ja: '反映中...', en: 'Applying...' },
+  'autoAssign.appliedNotice': { ja: '{n}件のシフトを反映しました', en: 'Applied {n} shift(s).' },
+  'autoAssign.historyHeading': { ja: '自動配置の変更履歴', en: 'Auto-assign History' },
+  'autoAssign.historyEntry': { ja: '{time} ・ {n}件反映', en: '{time} · {n} applied' },
+  'autoAssign.undo': { ja: '元に戻す', en: 'Undo' },
+  'autoAssign.undone': { ja: '取り消し済み', en: 'Undone' },
+  'autoAssign.undoing': { ja: '取り消し中...', en: 'Undoing...' },
+  'autoAssign.undoneNotice': { ja: '{n}件の自動配置を取り消しました', en: 'Reverted {n} auto-assigned shift(s).' },
+
   'mood.happy': { ja: '上機嫌', en: 'Happy' },
   'mood.neutral': { ja: '普通', en: 'Neutral' },
   'mood.tired': { ja: '疲れ気味', en: 'Tired' },

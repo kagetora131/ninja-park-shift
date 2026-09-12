@@ -174,7 +174,7 @@ export function useShiftStore() {
   /** 自動配置などでまとめて複数件を作成する際に使う一括upsert(refetchは最後に1回だけ)。 */
   const bulkUpsertShifts = useCallback(
     async (inputs: NewShiftInput[]) => {
-      if (inputs.length === 0) return;
+      if (inputs.length === 0) return [];
       const rows = inputs.map((input) => {
         const id = `${input.date}_${input.employeeId}`;
         const [sh, sm] = input.start.split(':').map(Number);
@@ -196,6 +196,17 @@ export function useShiftStore() {
         };
       });
       await supabase.from('shifts').upsert(rows);
+      await refetchShifts();
+      return rows.map((r) => r.id);
+    },
+    [refetchShifts],
+  );
+
+  /** 自動配置の「元に戻す」で使う一括削除(refetchは最後に1回だけ)。 */
+  const bulkDeleteShifts = useCallback(
+    async (ids: string[]) => {
+      if (ids.length === 0) return;
+      await supabase.from('shifts').delete().in('id', ids);
       await refetchShifts();
     },
     [refetchShifts],
@@ -297,6 +308,7 @@ export function useShiftStore() {
     upsertShift,
     removeShift,
     bulkUpsertShifts,
+    bulkDeleteShifts,
     upsertEmployee,
     removeEmployee,
     updateFacilityRevenue,

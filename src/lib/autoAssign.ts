@@ -13,8 +13,16 @@ export interface AutoAssignShortfall {
   missing: number;
 }
 
+/** 自動配置の1候補。判定理由をプレビューで表示できるよう、算出根拠を保持する。 */
+export interface AutoAssignCandidate extends NewShiftInput {
+  isMainFacility: boolean;
+  isRequestedOffWeekday: boolean;
+  consecutiveDaysAfter: number;
+  requiresQualification: boolean;
+}
+
 export interface AutoAssignResult {
-  created: NewShiftInput[];
+  created: AutoAssignCandidate[];
   shortfalls: AutoAssignShortfall[];
 }
 
@@ -43,6 +51,9 @@ function priorConsecutiveStreak(workDates: Set<string>, date: string): number {
  * 3. 所属施設(応援ではない) を優先
  * 4. 希望休みの曜日ではないことを優先(やむを得ず希望休み曜日に入れる場合は isDesired=false にする)
  * 5. これまでの割当数が少ない人を優先(できるだけ均等に配分する)
+ *
+ * この関数は既存データを読むだけの純粋な計算で、DBへの書き込みは行わない
+ * (呼び出し側が結果をプレビュー表示し、ユーザーが確認してから反映する)。
  */
 export function autoAssignShifts(
   employees: Employee[],
@@ -50,7 +61,7 @@ export function autoAssignShifts(
   postRequirements: PostRequirements,
   dates: string[],
 ): AutoAssignResult {
-  const created: NewShiftInput[] = [];
+  const created: AutoAssignCandidate[] = [];
   const shortfalls: AutoAssignShortfall[] = [];
 
   const workDatesByEmployee = new Map<string, Set<string>>();
@@ -104,7 +115,11 @@ export function autoAssignShifts(
       const pattern = pickDefaultPattern(facility);
 
       for (const emp of chosen) {
-        const isDesired = !emp.desiredDaysOff.includes(weekday);
+        const isRequestedOffWeekday = emp.desiredDaysOff.includes(weekday);
+        const isDesired = !isRequestedOffWeekday;
+        const workDates = workDatesByEmployee.get(emp.id) ?? new Set<string>();
+        const consecutiveDaysAfter = priorConsecutiveStreak(workDates, date) + 1;
+
         created.push({
           date,
           employeeId: emp.id,
@@ -114,6 +129,10 @@ export function autoAssignShifts(
           breakMinutes: pattern.breakMinutes,
           isDesired,
           note: isDesired ? undefined : '自動配置(希望休みの曜日のため要確認)',
+          isMainFacility: emp.mainFacility === facility,
+          isRequestedOffWeekday,
+          consecutiveDaysAfter,
+          requiresQualification: facility === 'amuse',
         });
         workingTodayEmployeeIds.add(emp.id);
         const set = workDatesByEmployee.get(emp.id) ?? new Set<string>();
