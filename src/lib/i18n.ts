@@ -108,6 +108,13 @@ const STRINGS = {
   'coverage.statusShort': { ja: '人員不足', en: 'Understaffed' },
   'coverage.statusOver': { ja: '人員過多', en: 'Overstaffed' },
   'coverage.rowSummary': { ja: '{actual}/{required}名・{status}', en: '{actual}/{required} · {status}' },
+  'coverage.scopeToday': { ja: '今日', en: 'Today' },
+  'coverage.scopeWeek': { ja: '今週', en: 'This Week' },
+  'coverage.scopeAll': { ja: 'すべて', en: 'All' },
+  'coverage.unresolvedOnly': { ja: '未解決のみ表示', en: 'Unresolved only' },
+  'coverage.dismissedCount': { ja: '(対応済み{n}件を非表示中)', en: '({n} resolved hidden)' },
+  'coverage.markResolved': { ja: '対応済みにする', en: 'Mark as resolved' },
+  'coverage.markUnresolved': { ja: '未解決に戻す', en: 'Mark as unresolved' },
 
   'posts.wageHeading': { ja: 'ポジション別時給・給与', en: 'Position Pay Rates' },
   'posts.wageDescription': {
