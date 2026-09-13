@@ -45,6 +45,8 @@ export interface ShiftEntry {
   breakMinutes: number;
   actualHours: number;
   note?: string;
+  /** DBで自動更新される最終更新日時(ISO文字列)。従業員側の「シフトが更新された」通知に使う。 */
+  updatedAt: string;
 }
 
 export interface FacilityFinance {

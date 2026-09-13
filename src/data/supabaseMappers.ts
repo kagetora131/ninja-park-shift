@@ -58,6 +58,7 @@ export interface ShiftRow {
   break_minutes: number;
   actual_hours: number;
   note: string | null;
+  updated_at: string;
 }
 
 export function mapShiftRow(r: ShiftRow): ShiftEntry {
@@ -73,6 +74,7 @@ export function mapShiftRow(r: ShiftRow): ShiftEntry {
     breakMinutes: r.break_minutes,
     actualHours: Number(r.actual_hours),
     note: r.note ?? undefined,
+    updatedAt: r.updated_at,
   };
 }
 

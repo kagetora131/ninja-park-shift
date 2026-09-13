@@ -91,6 +91,20 @@ const STRINGS = {
     ja: '現在、対応可能で空いている忍者はいません',
     en: 'No one qualified is currently available.',
   },
+  'myShifts.usuallyOffBadge': { ja: '普段は休みの曜日', en: 'Usually off this day' },
+  'myShifts.monthShiftCount': { ja: '今月{n}回勤務', en: '{n} shifts this month' },
+  'myShifts.copyMessage': { ja: '文面をコピー', en: 'Copy message' },
+  'myShifts.copied': { ja: 'コピーしました', en: 'Copied!' },
+  'myShifts.swapMessageTemplate': {
+    ja: '{date}（{facility}・{start}–{end}）のシフトを、{candidate}さんに代わっていただけないか相談したいです。',
+    en: 'Could I ask about swapping my shift on {date} ({facility}, {start}–{end}) with {candidate}?',
+  },
+  'myShifts.changedBanner': {
+    ja: '{n}件のシフトが更新されました：{dates}',
+    en: '{n} shift(s) were updated: {dates}',
+  },
+  'myShifts.changedAck': { ja: '確認しました', en: 'Got it' },
+  'myShifts.changedBadgeTitle': { ja: 'シフトが更新されました', en: 'This shift was updated' },
 
   'coverage.heading': { ja: 'ポスト充足状況', en: 'Staffing Coverage' },
   'coverage.description': {
