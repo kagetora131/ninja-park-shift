@@ -3,7 +3,9 @@ import { ChevronLeft, ChevronRight, History, Plus, Sparkles } from 'lucide-react
 import { NinjaAvatar } from './NinjaAvatar';
 import { PostCoveragePanel } from './PostCoveragePanel';
 import { AutoAssignPreviewModal } from './AutoAssignPreviewModal';
-import { FACILITY_COLOR, FACILITY_ORDER, FACILITIES, capableFacilities } from '../data/facilities';
+import { ShiftOverviewGrid } from './ShiftOverviewGrid';
+import { PersonalSummaryTable } from './PersonalSummaryTable';
+import { FACILITY_COLOR, FACILITIES, capableFacilities, sortEmployeesByFacility } from '../data/facilities';
 import { WEEKDAYS } from '../data/constants';
 import { SHIFT_PATTERNS } from '../data/shiftPatterns';
 import { formatDateJp } from '../lib/format';
@@ -25,6 +27,8 @@ import type { ShiftDraft } from './ShiftEditModal';
 import type { NewShiftInput } from '../hooks/useShiftStore';
 import type { AutoAssignCandidate, AutoAssignResult } from '../lib/autoAssign';
 import type { DailyFinance, Employee, MoodResult, PostRequirements, ShiftEntry } from '../types';
+
+type ViewMode = 'edit' | 'overview' | 'personal';
 
 interface AutoAssignHistoryEntry {
   id: string;
@@ -72,15 +76,12 @@ export function ShiftBoard({
   const [applying, setApplying] = useState(false);
   const [history, setHistory] = useState<AutoAssignHistoryEntry[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('edit');
   const columnRefs = useRef(new Map<string, HTMLTableCellElement>());
 
   const dates = datesInMonth(view.year, view.month);
 
-  const sortedEmployees = [...employees].sort((a, b) => {
-    const fa = FACILITY_ORDER.indexOf(a.mainFacility);
-    const fb = FACILITY_ORDER.indexOf(b.mainFacility);
-    return fa - fb || a.name.localeCompare(b.name, 'ja');
-  });
+  const sortedEmployees = sortEmployeesByFacility(employees);
 
   const employeeMap = new Map(employees.map((e) => [e.id, e]));
   const shiftByKey = new Map<string, ShiftEntry>();
@@ -236,15 +237,37 @@ export function ShiftBoard({
           </button>
         </div>
         <div className="relative flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={handleOpenAutoAssignPreview}
-            className="flex items-center gap-1.5 rounded-full border border-gold/50 px-3 py-1.5 text-xs text-gold transition hover:bg-gold/10"
-          >
-            <Sparkles size={13} />
-            {t('shiftBoard.autoAssign')}
-          </button>
-          {history.length > 0 && (
+          <div className="flex items-center gap-1 rounded-full border border-paper/15 bg-void/40 p-0.5 text-[11px]">
+            {(
+              [
+                ['edit', t('viewMode.edit')],
+                ['overview', t('viewMode.overview')],
+                ['personal', t('viewMode.personal')],
+              ] as const
+            ).map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setViewMode(mode)}
+                className={`rounded-full px-2.5 py-1 transition ${
+                  viewMode === mode ? 'bg-gold/20 text-gold' : 'text-paper-dim hover:text-paper'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {viewMode === 'edit' && (
+            <button
+              type="button"
+              onClick={handleOpenAutoAssignPreview}
+              className="flex items-center gap-1.5 rounded-full border border-gold/50 px-3 py-1.5 text-xs text-gold transition hover:bg-gold/10"
+            >
+              <Sparkles size={13} />
+              {t('shiftBoard.autoAssign')}
+            </button>
+          )}
+          {viewMode === 'edit' && history.length > 0 && (
             <button
               type="button"
               onClick={() => setHistoryOpen((v) => !v)}
@@ -254,7 +277,7 @@ export function ShiftBoard({
               {t('autoAssign.historyHeading')}
             </button>
           )}
-          {historyOpen && history.length > 0 && (
+          {viewMode === 'edit' && historyOpen && history.length > 0 && (
             <div className="absolute right-0 top-full z-30 mt-2 w-72 rounded-xl border border-paper/15 bg-void-soft p-3 shadow-2xl">
               <p className="mb-2 text-xs font-medium text-paper">{t('autoAssign.historyHeading')}</p>
               <div className="space-y-1.5">
@@ -291,12 +314,26 @@ export function ShiftBoard({
         </div>
       </div>
 
-      {notice && (
+      {viewMode === 'edit' && notice && (
         <div className="animate-rise rounded-lg border border-gold/50 bg-gold/10 px-4 py-2 text-xs text-gold">
           {notice}
         </div>
       )}
 
+      {viewMode === 'overview' && (
+        <ShiftOverviewGrid
+          employees={employees}
+          shifts={shifts}
+          postRequirements={postRequirements}
+          dates={dates}
+          onEditShift={onEditShift}
+          onCreateShift={onCreateShift}
+        />
+      )}
+
+      {viewMode === 'personal' && <PersonalSummaryTable employees={employees} shifts={shifts} dates={dates} />}
+
+      {viewMode === 'edit' && (
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         <div className="max-h-[70vh] flex-1 overflow-auto rounded-xl border border-paper/10">
           <table className="border-collapse text-xs">
@@ -471,8 +508,9 @@ export function ShiftBoard({
 
         <PostCoveragePanel dates={dates} shifts={shifts} postRequirements={postRequirements} onSelectDate={handleSelectCoverageDate} />
       </div>
+      )}
 
-      <p className="text-[11px] text-paper-dim">{t('shiftBoard.legend')}</p>
+      {viewMode === 'edit' && <p className="text-[11px] text-paper-dim">{t('shiftBoard.legend')}</p>}
 
       {previewResult && (
         <AutoAssignPreviewModal

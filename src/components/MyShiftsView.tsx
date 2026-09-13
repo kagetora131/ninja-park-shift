@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeftRight, Bell, Check, ChevronLeft, ChevronRight, Copy, Users } from 'lucide-react';
 import { NinjaAvatar } from './NinjaAvatar';
-import { FACILITY_COLOR, FACILITY_ORDER, capableFacilities } from '../data/facilities';
+import { FACILITY_COLOR, FACILITY_ORDER, capableFacilities, sortEmployeesByFacility } from '../data/facilities';
 import { FACILITY_ICON } from './facilityIcon';
 import { formatDateJp, weekdayJp } from '../lib/format';
 import { MOOD_COLOR } from '../lib/mood';
@@ -68,11 +68,7 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employee.id]);
 
-  const sortedEmployees = [...employees].sort((a, b) => {
-    const fa = FACILITY_ORDER.indexOf(a.mainFacility);
-    const fb = FACILITY_ORDER.indexOf(b.mainFacility);
-    return fa - fb || a.name.localeCompare(b.name, 'ja');
-  });
+  const sortedEmployees = sortEmployeesByFacility(employees);
 
   const shiftByKey = new Map<string, ShiftEntry>();
   for (const s of shifts) shiftByKey.set(`${s.date}_${s.employeeId}`, s);

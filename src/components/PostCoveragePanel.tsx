@@ -1,56 +1,16 @@
 import { useMemo, useState } from 'react';
 import { AlertTriangle, Check, TrendingUp, Users } from 'lucide-react';
-import { FACILITY_COLOR, FACILITY_ORDER } from '../data/facilities';
-import { formatDateJp, shiftDate, weekdayJp } from '../lib/format';
+import { FACILITY_COLOR } from '../data/facilities';
+import { formatDateJp, shiftDate } from '../lib/format';
+import { computeCoverageRows, type CoverageRow, type CoverageStatus } from '../lib/postCoverage';
 import { useLabelContext } from '../hooks/LabelContext';
-import type { FacilityId, PostRequirements, ShiftEntry } from '../types';
-
-type CoverageStatus = 'empty' | 'understaffed' | 'overstaffed';
-
-interface CoverageRow {
-  date: string;
-  facility: FacilityId;
-  required: number;
-  actual: number;
-  status: CoverageStatus;
-}
+import type { PostRequirements, ShiftEntry } from '../types';
 
 interface PostCoveragePanelProps {
   dates: string[];
   shifts: ShiftEntry[];
   postRequirements: PostRequirements;
   onSelectDate: (date: string) => void;
-}
-
-/** 「不在」→「不足」→「過多」の固定順。グループ内の並び替えに使う。 */
-const STATUS_ORDER: Record<CoverageStatus, number> = { empty: 0, understaffed: 1, overstaffed: 2 };
-
-function computeCoverageRows(
-  dates: string[],
-  shifts: ShiftEntry[],
-  postRequirements: PostRequirements,
-): CoverageRow[] {
-  const rows: CoverageRow[] = [];
-
-  for (const date of dates) {
-    const weekday = weekdayJp(date);
-
-    for (const facility of FACILITY_ORDER) {
-      const required = postRequirements[weekday]?.[facility];
-      if (required == null) continue;
-      const actual = shifts.filter((s) => s.date === date && s.facility === facility).length;
-      if (actual === required) continue;
-      rows.push({
-        date,
-        facility,
-        required,
-        actual,
-        status: actual === 0 ? 'empty' : actual < required ? 'understaffed' : 'overstaffed',
-      });
-    }
-  }
-
-  return rows.sort((a, b) => a.date.localeCompare(b.date) || STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
 }
 
 function rowKey(row: Pick<CoverageRow, 'date' | 'facility'>): string {

@@ -33,3 +33,12 @@ export const FACILITY_COLOR: Record<FacilityId, string> = {
 export function capableFacilities(employee: Employee): FacilityId[] {
   return [employee.mainFacility, ...employee.crossTrained];
 }
+
+/** シフト表・マイシフト等で共通して使う、所属施設順→氏名順の従業員ソート。 */
+export function sortEmployeesByFacility(employees: Employee[]): Employee[] {
+  return [...employees].sort((a, b) => {
+    const fa = FACILITY_ORDER.indexOf(a.mainFacility);
+    const fb = FACILITY_ORDER.indexOf(b.mainFacility);
+    return fa - fb || a.name.localeCompare(b.name, 'ja');
+  });
+}

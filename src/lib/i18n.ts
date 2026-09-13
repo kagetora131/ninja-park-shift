@@ -406,6 +406,28 @@ const STRINGS = {
     en: 'Help shifts at unfamiliar facilities are piling up. Reduce the frequency or return to their home facility.',
   },
 
+  'viewMode.edit': { ja: '編集モード', en: 'Edit' },
+  'viewMode.overview': { ja: '俯瞰モード', en: 'Overview' },
+  'viewMode.personal': { ja: '個人モード', en: 'Personal' },
+
+  'overview.legend': {
+    ja: '色付きセル=勤務あり(色は配置施設、編集モードと同じ配色)・空欄=休み。日付見出しのドットは施設の充足状況(赤=不足/不在・金=過多)を表します。クリックで詳細編集。',
+    en: 'A colored cell means working that day (color = facility, same as Edit mode); empty means off. The dot on each date shows staffing status (red = short/unstaffed, gold = over). Click a cell for detailed editing.',
+  },
+  'overview.workingTitle': { ja: '{facility} {start}–{end}', en: '{facility} {start}–{end}' },
+  'overview.offTitle': { ja: '休み', en: 'Off' },
+
+  'personal.heading': { ja: '個人サマリー', en: 'Personal Summary' },
+  'personal.description': {
+    ja: '希望勤務日数・実勤務日数・最大連勤日数・応援回数を1行で比較できます(この月のみ集計)。',
+    en: 'Compare desired vs. actual work days, longest streak, and help-shift count in one row (this month only).',
+  },
+  'personal.colStaff': { ja: 'スタッフ', en: 'Staff' },
+  'personal.colDesired': { ja: '希望勤務日数/週', en: 'Desired/wk' },
+  'personal.colActual': { ja: '実勤務日数(月)', en: 'Actual (mo)' },
+  'personal.colMaxConsecutive': { ja: '最大連勤日数', en: 'Longest Streak' },
+  'personal.colHelp': { ja: '応援回数', en: 'Help Shifts' },
+
   'mood.happy': { ja: '上機嫌', en: 'Happy' },
   'mood.neutral': { ja: '普通', en: 'Neutral' },
   'mood.tired': { ja: '疲れ気味', en: 'Tired' },
