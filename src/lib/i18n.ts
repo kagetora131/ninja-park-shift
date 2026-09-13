@@ -32,6 +32,7 @@ const STRINGS = {
   'tab.finance': { ja: '収支', en: 'Finance' },
   'tab.posts': { ja: '給与・ポスト設定', en: 'Wages & Staffing' },
   'tab.labels': { ja: '用語管理', en: 'Terminology' },
+  'tab.health': { ja: '健全性', en: 'Team Health' },
   'tab.myShifts': { ja: 'マイシフト', en: 'My Shifts' },
   'tab.myPreferences': { ja: '自分の設定', en: 'My Settings' },
 
@@ -342,6 +343,69 @@ const STRINGS = {
   'autoAssign.undoing': { ja: '取り消し中...', en: 'Undoing...' },
   'autoAssign.undoneNotice': { ja: '{n}件の自動配置を取り消しました', en: 'Reverted {n} auto-assigned shift(s).' },
 
+  'health.heading': { ja: '忍者チーム健全性スコア', en: 'Ninja Team Health Score' },
+  'health.description': {
+    ja: '選択した月のシフトから、忍者たちの表情(happy/neutral/tired/unhappy)を集計したスコアです。',
+    en: "A score aggregated from the ninjas' moods (happy/neutral/tired/unhappy) across the selected month's shifts.",
+  },
+  'health.scoreOutOf100': { ja: '{score}点 / 100点', en: '{score} / 100' },
+  'health.labelGood': { ja: '良好', en: 'Good' },
+  'health.labelOk': { ja: '普通', en: 'OK' },
+  'health.labelWarning': { ja: '要注意', en: 'Needs Attention' },
+  'health.shiftBreakdown': {
+    ja: '内訳：上機嫌{happy}・普通{neutral}・疲れ気味{tired}・不満{unhappy}(全{total}件)',
+    en: 'Breakdown: Happy {happy} · Neutral {neutral} · Tired {tired} · Unhappy {unhappy} (of {total})',
+  },
+  'health.atRiskHeading': { ja: '要注意の忍者', en: 'Ninjas Needing Attention' },
+  'health.atRiskDescription': {
+    ja: 'この月に「疲れ気味」または「不満」のシフトが1件以上ある忍者を表示しています。クリックすると詳細と改善案を確認できます。',
+    en: 'Shows ninjas with at least one "tired" or "unhappy" shift this month. Click one to see details and suggestions.',
+  },
+  'health.allGood': { ja: 'この月は全員が良好な状態です', en: 'Everyone is doing well this month.' },
+  'health.scoreLabel': { ja: 'スコア', en: 'Score' },
+  'health.tiredCount': { ja: '疲れ気味{n}件', en: '{n} tired' },
+  'health.unhappyCount': { ja: '不満{n}件', en: '{n} unhappy' },
+  'health.noShiftsThisMonth': { ja: 'この月はシフトなし', en: 'No shifts this month' },
+  'health.detailHeading': { ja: '{name}の状態', en: "{name}'s Status" },
+  'health.problemShiftsHeading': { ja: '疲れ気味・不満のシフト', en: 'Tired / Unhappy Shifts' },
+  'health.suggestionLabel': { ja: '改善案', en: 'Suggestion' },
+  'health.simulateRemove': { ja: 'この配置を外してシミュレーション', en: 'Simulate removing this shift' },
+  'health.simulateResult': {
+    ja: 'この配置を外すと、疲れ気味・不満のシフトが{before}件→{after}件になります(スコア{scoreBefore}→{scoreAfter})',
+    en: 'Removing this shift would change tired/unhappy shifts from {before} to {after} (score {scoreBefore} → {scoreAfter})',
+  },
+  'health.applyRemove': { ja: 'このシフトを実際に削除する', en: 'Actually delete this shift' },
+  'health.close': { ja: '閉じる', en: 'Close' },
+
+  'healthSuggestion.offDateRequested': {
+    ja: 'この日は本人が個別に希望休みを指定しています。配置を外すか、他の忍者への交代を検討してください。',
+    en: 'This employee specifically requested this day off. Consider removing this shift or swapping it to someone else.',
+  },
+  'healthSuggestion.offWeekdayRequested': {
+    ja: '普段の希望休み曜日です。可能であればこの曜日への配置を避けてください。',
+    en: "This is their usual requested day off. Avoid scheduling them on this weekday when possible.",
+  },
+  'healthSuggestion.severeOverrun': {
+    ja: '連勤上限を大きく超えています。至急、休みを挟んでください。',
+    en: 'This far exceeds their consecutive-day limit. Insert a day off as soon as possible.',
+  },
+  'healthSuggestion.overrun': {
+    ja: '連勤上限を超えています。近いうちに休みを挟むことを検討してください。',
+    en: 'This exceeds their consecutive-day limit. Consider inserting a day off soon.',
+  },
+  'healthSuggestion.consecutiveDays': {
+    ja: '連勤が続いています。休みを挟むか、勤務日数を調整してください。',
+    en: 'Consecutive work days are piling up. Insert a rest day or adjust the schedule.',
+  },
+  'healthSuggestion.unfamiliarHelpUndesired': {
+    ja: '希望と異なり不慣れな施設への応援になっています。所属施設への配置を優先してください。',
+    en: 'This is an unwanted help shift at an unfamiliar facility. Prioritize their home facility instead.',
+  },
+  'healthSuggestion.unfamiliarHelpContinuing': {
+    ja: '不慣れな施設への応援が続いています。応援の頻度を下げるか、所属施設中心の配置に戻してください。',
+    en: 'Help shifts at unfamiliar facilities are piling up. Reduce the frequency or return to their home facility.',
+  },
+
   'mood.happy': { ja: '上機嫌', en: 'Happy' },
   'mood.neutral': { ja: '普通', en: 'Neutral' },
   'mood.tired': { ja: '疲れ気味', en: 'Tired' },
@@ -368,6 +432,13 @@ export function translateReason(reason: MoodReason, locale: Locale): string {
 
 export function moodLabel(mood: Mood, locale: Locale): string {
   return t(`mood.${mood}` as StringKey, locale);
+}
+
+/** 表情判定の理由キーから、改善案の文言を引く(happy/neutral専用の理由には用意していないため、その場合は空文字)。 */
+export function healthSuggestion(reasonKey: MoodReason['key'], locale: Locale): string {
+  const key = `healthSuggestion.${reasonKey}` as StringKey;
+  if (!(key in STRINGS)) return '';
+  return t(key, locale);
 }
 
 const WEEKDAY_EN_BY_JA: Record<string, string> = {

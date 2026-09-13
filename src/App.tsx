@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarDays, ClipboardList, Languages, TableProperties, UserCog, Users, Wallet } from 'lucide-react';
+import { CalendarDays, ClipboardList, HeartPulse, Languages, TableProperties, UserCog, Users, Wallet } from 'lucide-react';
 import { Header } from './components/Header';
 import { TabNav, type TabDef } from './components/TabNav';
 import { ShiftBoard } from './components/ShiftBoard';
@@ -7,6 +7,7 @@ import { StaffView } from './components/StaffView';
 import { FinanceDashboard } from './components/FinanceDashboard';
 import { PostRequirementEditor } from './components/PostRequirementEditor';
 import { LabelManagerView } from './components/LabelManagerView';
+import { HealthScoreView } from './components/HealthScoreView';
 import { MyShiftsView } from './components/MyShiftsView';
 import { MyPreferencesView } from './components/MyPreferencesView';
 import { LoginPage } from './components/LoginPage';
@@ -28,6 +29,7 @@ function useManagerTabs(): TabDef[] {
     { id: 'staff', label: t('tab.staff'), icon: Users },
     { id: 'finance', label: t('tab.finance'), icon: Wallet },
     { id: 'posts', label: t('tab.posts'), icon: ClipboardList },
+    { id: 'health', label: t('tab.health'), icon: HeartPulse },
     { id: 'labels', label: t('tab.labels'), icon: Languages },
   ];
 }
@@ -133,6 +135,10 @@ function ManagerApp() {
             onChangeFulltimeMonthlySalary={updateFulltimeMonthlySalary}
             onChangePostRequirement={updatePostRequirement}
           />
+        )}
+
+        {activeTab === 'health' && (
+          <HealthScoreView employees={employees} shifts={shifts} moodMap={moodMap} onRemoveShift={removeShift} />
         )}
 
         {activeTab === 'labels' && <LabelManagerView />}
