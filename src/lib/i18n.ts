@@ -10,6 +10,7 @@ const STRINGS = {
   'header.roleManager': { ja: '忍者頭領(マネージャー)', en: 'Manager' },
   'header.roleEmployee': { ja: '従業員', en: 'Staff' },
   'header.logout': { ja: 'ログアウト', en: 'Log out' },
+  'header.today': { ja: '本日', en: 'Today' },
 
   'login.heading': { ja: 'ログイン', en: 'Sign in' },
   'login.email': { ja: 'メールアドレス', en: 'Email address' },

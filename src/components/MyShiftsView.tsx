@@ -13,6 +13,7 @@ import {
   CALENDAR_START_YEAR,
   addMonths,
   datesInMonth,
+  defaultView,
 } from '../lib/monthGrid';
 import { useLabelContext } from '../hooks/LabelContext';
 import type { Employee, MoodResult, ShiftEntry } from '../types';
@@ -51,7 +52,7 @@ function saveLastSeenAt(employeeId: string, iso: string) {
 
 export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsViewProps) {
   const { locale, employeeName, facilityName, t } = useLabelContext();
-  const [view, setView] = useState({ year: CALENDAR_START_YEAR, month: CALENDAR_START_MONTH });
+  const [view, setView] = useState(defaultView);
   const dates = datesInMonth(view.year, view.month);
   const [selectedDate, setSelectedDate] = useState(() => todayOr(dates));
   const [lastSeenAt, setLastSeenAt] = useState<string | null>(() => loadLastSeenAt(employee.id));

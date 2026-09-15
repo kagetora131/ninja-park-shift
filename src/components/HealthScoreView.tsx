@@ -11,6 +11,7 @@ import {
   CALENDAR_START_YEAR,
   addMonths,
   datesInMonth,
+  defaultView,
 } from '../lib/monthGrid';
 import { useLabelContext } from '../hooks/LabelContext';
 import type { Employee, MoodResult, ShiftEntry } from '../types';
@@ -30,7 +31,7 @@ const LABEL_STYLE: Record<'good' | 'ok' | 'warning', string> = {
 
 export function HealthScoreView({ employees, shifts, moodMap, onRemoveShift }: HealthScoreViewProps) {
   const { locale, employeeName, t } = useLabelContext();
-  const [view, setView] = useState({ year: CALENDAR_START_YEAR, month: CALENDAR_START_MONTH });
+  const [view, setView] = useState(defaultView);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
 
   const dates = datesInMonth(view.year, view.month);

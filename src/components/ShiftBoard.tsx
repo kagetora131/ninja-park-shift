@@ -21,6 +21,7 @@ import {
   CALENDAR_START_YEAR,
   addMonths,
   datesInMonth,
+  defaultView,
 } from '../lib/monthGrid';
 import { useLabelContext } from '../hooks/LabelContext';
 import type { ShiftDraft } from './ShiftEditModal';
@@ -68,7 +69,7 @@ export function ShiftBoard({
 }: ShiftBoardProps) {
   useAutoScrollOnDrag();
   const { locale, employeeName, facilityName, t } = useLabelContext();
-  const [view, setView] = useState({ year: CALENDAR_START_YEAR, month: CALENDAR_START_MONTH });
+  const [view, setView] = useState(defaultView);
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const [highlightDate, setHighlightDate] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
