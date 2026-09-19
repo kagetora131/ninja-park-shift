@@ -135,3 +135,43 @@ export interface LabelRow {
   field: string;
   values: LabelValues;
 }
+
+/** チャットの種別。業務連絡は常に1件だけ存在し、マネージャーのみ投稿できる。 */
+export type ChatConversationType = 'broadcast' | 'dm' | 'group';
+
+export interface ChatConversation {
+  id: string;
+  type: ChatConversationType;
+  /** グループチャットの名前(DM・業務連絡ではnull)。 */
+  name: string | null;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  conversationId: string;
+  /** 送信者の`profiles.id`(認証ユーザーID)。マネージャーはemployees行を持たないため、employees.idではなくこちらを使う。 */
+  senderProfileId: string;
+  body: string | null;
+  /** Supabase Storage(`chat-images`バケット)内のパス。表示には署名付きURLへの変換が必要。 */
+  imagePath: string | null;
+  createdAt: string;
+}
+
+/** メッセージへのスタンプ。ネガティブな用途を防ぐため固定6種類のみ。 */
+export type ChatStampKey = 'ninja' | 'thumbs_up' | 'cheer' | 'muscle' | 'fire' | 'thanks';
+
+export interface ChatReaction {
+  messageId: string;
+  profileId: string;
+  stampKey: ChatStampKey;
+  createdAt: string;
+}
+
+/** チャットの参加者ディレクトリ(profiles全件)。DM/グループの相手選択や表示名解決に使う。 */
+export interface ChatDirectoryEntry {
+  profileId: string;
+  employeeId: string | null;
+  role: UserRole;
+}

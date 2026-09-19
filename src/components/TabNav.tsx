@@ -4,6 +4,7 @@ export interface TabDef {
   id: string;
   label: string;
   icon: LucideIcon;
+  badgeCount?: number;
 }
 
 interface TabNavProps {
@@ -31,6 +32,11 @@ export function TabNav({ tabs, active, onChange }: TabNavProps) {
           >
             <Icon size={15} />
             {tab.label}
+            {!!tab.badgeCount && (
+              <span className="rounded-full bg-seal-bright px-1.5 py-[1px] text-[10px] font-semibold text-void">
+                {tab.badgeCount > 9 ? '9+' : tab.badgeCount}
+              </span>
+            )}
           </button>
         );
       })}

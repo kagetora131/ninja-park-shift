@@ -1,4 +1,18 @@
-import type { Employee, FacilityId, FinanceRevenueRow, LabelRow, PostRequirements, ShiftEntry, WageSettings } from '../types';
+import type {
+  ChatConversation,
+  ChatConversationType,
+  ChatDirectoryEntry,
+  ChatMessage,
+  ChatReaction,
+  ChatStampKey,
+  Employee,
+  FacilityId,
+  FinanceRevenueRow,
+  LabelRow,
+  PostRequirements,
+  ShiftEntry,
+  WageSettings,
+} from '../types';
 
 // Supabase(Postgres)の行(snake_case)とアプリ内の型(camelCase)を相互変換する。
 
@@ -135,5 +149,73 @@ export function mapLabelRow(r: LabelRowDb): LabelRow {
     entityId: r.entity_id,
     field: r.field,
     values: r.values,
+  };
+}
+
+export interface ChatConversationRow {
+  id: string;
+  type: string;
+  name: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export function mapChatConversationRow(r: ChatConversationRow): ChatConversation {
+  return {
+    id: r.id,
+    type: r.type as ChatConversationType,
+    name: r.name,
+    createdBy: r.created_by,
+    createdAt: r.created_at,
+  };
+}
+
+export interface ChatMessageRow {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  body: string | null;
+  image_path: string | null;
+  created_at: string;
+}
+
+export function mapChatMessageRow(r: ChatMessageRow): ChatMessage {
+  return {
+    id: r.id,
+    conversationId: r.conversation_id,
+    senderProfileId: r.sender_id,
+    body: r.body,
+    imagePath: r.image_path,
+    createdAt: r.created_at,
+  };
+}
+
+export interface ChatReactionRow {
+  message_id: string;
+  profile_id: string;
+  stamp_key: string;
+  created_at: string;
+}
+
+export function mapChatReactionRow(r: ChatReactionRow): ChatReaction {
+  return {
+    messageId: r.message_id,
+    profileId: r.profile_id,
+    stampKey: r.stamp_key as ChatStampKey,
+    createdAt: r.created_at,
+  };
+}
+
+export interface ChatDirectoryRow {
+  id: string;
+  employee_id: string | null;
+  role: string;
+}
+
+export function mapChatDirectoryRow(r: ChatDirectoryRow): ChatDirectoryEntry {
+  return {
+    profileId: r.id,
+    employeeId: r.employee_id,
+    role: r.role as ChatDirectoryEntry['role'],
   };
 }

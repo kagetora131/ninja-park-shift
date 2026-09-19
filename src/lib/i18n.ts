@@ -433,6 +433,42 @@ const STRINGS = {
   'mood.neutral': { ja: '普通', en: 'Neutral' },
   'mood.tired': { ja: '疲れ気味', en: 'Tired' },
   'mood.unhappy': { ja: '不満', en: 'Unhappy' },
+
+  'tab.chat': { ja: 'チャット', en: 'Chat' },
+  'chat.broadcastName': { ja: '業務連絡', en: 'Announcements' },
+  'chat.broadcastReadOnlyNotice': {
+    ja: 'このチャンネルにはマネージャーからのお知らせのみ投稿されます。スタンプで反応できます。',
+    en: 'Only the manager can post here. You can react with a stamp.',
+  },
+  'chat.viewOnlyNotice': {
+    ja: 'これは他のスタッフの会話です。閲覧のみで、投稿・スタンプはできません。',
+    en: "This is another staff member's conversation. View-only — you can't post or react here.",
+  },
+  'chat.managerVisibilityNotice': {
+    ja: 'マネージャーはすべての会話を閲覧できます。',
+    en: 'The manager can view all conversations.',
+  },
+  'chat.myConversations': { ja: '自分の会話', en: 'My Conversations' },
+  'chat.allStaffConversations': { ja: '全スタッフの会話(閲覧のみ)', en: 'All Staff Conversations (View Only)' },
+  'chat.newDm': { ja: '個人チャットを開始', en: 'New Direct Message' },
+  'chat.newGroup': { ja: 'グループを作成', en: 'New Group' },
+  'chat.groupNamePlaceholder': { ja: 'グループ名', en: 'Group name' },
+  'chat.selectMembers': { ja: 'メンバーを選択', en: 'Select members' },
+  'chat.create': { ja: '作成', en: 'Create' },
+  'chat.send': { ja: '送信', en: 'Send' },
+  'chat.messagePlaceholder': { ja: 'メッセージを入力', en: 'Type a message' },
+  'chat.attachImage': { ja: '画像を添付', en: 'Attach image' },
+  'chat.uploading': { ja: 'アップロード中...', en: 'Uploading...' },
+  'chat.noConversations': { ja: '会話がまだありません。', en: 'No conversations yet.' },
+  'chat.noMessages': { ja: 'メッセージがまだありません。', en: 'No messages yet.' },
+  'chat.addReaction': { ja: 'スタンプを追加', en: 'Add reaction' },
+  'chat.close': { ja: '閉じる', en: 'Close' },
+  'chat.reactions.ninja': { ja: '忍者', en: 'Ninja' },
+  'chat.reactions.thumbsUp': { ja: 'いいね', en: 'Nice' },
+  'chat.reactions.cheer': { ja: 'お疲れ様', en: 'Cheers' },
+  'chat.reactions.muscle': { ja: 'がんばろう', en: "Let's do this" },
+  'chat.reactions.fire': { ja: 'ナイス', en: 'Awesome' },
+  'chat.reactions.thanks': { ja: 'ありがとう', en: 'Thanks' },
 } as const satisfies Record<string, Record<Locale, string>>;
 
 export type StringKey = keyof typeof STRINGS;

@@ -1,5 +1,15 @@
 import { useState } from 'react';
-import { CalendarDays, ClipboardList, HeartPulse, Languages, TableProperties, UserCog, Users, Wallet } from 'lucide-react';
+import {
+  CalendarDays,
+  ClipboardList,
+  HeartPulse,
+  Languages,
+  MessageSquare,
+  TableProperties,
+  UserCog,
+  Users,
+  Wallet,
+} from 'lucide-react';
 import { Header } from './components/Header';
 import { TabNav, type TabDef } from './components/TabNav';
 import { ShiftBoard } from './components/ShiftBoard';
@@ -10,11 +20,13 @@ import { LabelManagerView } from './components/LabelManagerView';
 import { HealthScoreView } from './components/HealthScoreView';
 import { MyShiftsView } from './components/MyShiftsView';
 import { MyPreferencesView } from './components/MyPreferencesView';
+import { ChatView } from './components/ChatView';
 import { LoginPage } from './components/LoginPage';
 import { ShiftEditModal, type ShiftDraft } from './components/ShiftEditModal';
 import { EmployeeEditModal, type EmployeeDraft } from './components/EmployeeEditModal';
 import { FinanceEditModal, type FinanceDraft } from './components/FinanceEditModal';
 import { useShiftStore } from './hooks/useShiftStore';
+import { useChatStore } from './hooks/useChatStore';
 import { useAuth } from './hooks/useAuth';
 import { LabelProvider, useLabelContext } from './hooks/LabelContext';
 import { useLocale } from './hooks/useLocale';
@@ -22,7 +34,7 @@ import { t } from './lib/i18n';
 import type { Employee, Profile, ShiftEntry } from './types';
 import type { AutoAssignCandidate } from './lib/autoAssign';
 
-function useManagerTabs(): TabDef[] {
+function useManagerTabs(chatBadgeCount: number): TabDef[] {
   const { t } = useLabelContext();
   return [
     { id: 'board', label: t('tab.board'), icon: TableProperties },
@@ -30,21 +42,24 @@ function useManagerTabs(): TabDef[] {
     { id: 'finance', label: t('tab.finance'), icon: Wallet },
     { id: 'posts', label: t('tab.posts'), icon: ClipboardList },
     { id: 'health', label: t('tab.health'), icon: HeartPulse },
+    { id: 'chat', label: t('tab.chat'), icon: MessageSquare, badgeCount: chatBadgeCount },
     { id: 'labels', label: t('tab.labels'), icon: Languages },
   ];
 }
 
-function useEmployeeTabs(): TabDef[] {
+function useEmployeeTabs(chatBadgeCount: number): TabDef[] {
   const { t } = useLabelContext();
   return [
     { id: 'myShifts', label: t('tab.myShifts'), icon: CalendarDays },
     { id: 'myPreferences', label: t('tab.myPreferences'), icon: UserCog },
+    { id: 'chat', label: t('tab.chat'), icon: MessageSquare, badgeCount: chatBadgeCount },
   ];
 }
 
-function ManagerApp() {
+function ManagerApp({ profile }: { profile: Profile }) {
   const {
     employees,
+    employeeMap,
     finance,
     shifts,
     moodMap,
@@ -62,8 +77,9 @@ function ManagerApp() {
     updateFulltimeMonthlySalary,
     updatePostRequirement,
   } = useShiftStore();
+  const chat = useChatStore(profile.id);
   const { t } = useLabelContext();
-  const managerTabs = useManagerTabs();
+  const managerTabs = useManagerTabs(chat.totalUnreadCount);
   const [activeTab, setActiveTab] = useState('board');
   const [shiftDraft, setShiftDraft] = useState<ShiftDraft | null>(null);
   const [employeeDraft, setEmployeeDraft] = useState<EmployeeDraft | null>(null);
@@ -141,6 +157,10 @@ function ManagerApp() {
           <HealthScoreView employees={employees} shifts={shifts} moodMap={moodMap} onRemoveShift={removeShift} />
         )}
 
+        {activeTab === 'chat' && (
+          <ChatView employeeMap={employeeMap} myProfileId={profile.id} isManager chat={chat} />
+        )}
+
         {activeTab === 'labels' && <LabelManagerView />}
       </main>
 
@@ -172,8 +192,9 @@ function ManagerApp() {
 
 function EmployeeApp({ profile }: { profile: Profile }) {
   const { employees, employeeMap, shifts, moodMap, refetchEmployees } = useShiftStore();
+  const chat = useChatStore(profile.id);
   const { t } = useLabelContext();
-  const employeeTabs = useEmployeeTabs();
+  const employeeTabs = useEmployeeTabs(chat.totalUnreadCount);
   const [activeTab, setActiveTab] = useState('myShifts');
   const employee = profile.employeeId ? employeeMap.get(profile.employeeId) : undefined;
 
@@ -194,6 +215,9 @@ function EmployeeApp({ profile }: { profile: Profile }) {
         )}
         {activeTab === 'myPreferences' && (
           <MyPreferencesView employee={employee} onSaved={refetchEmployees} />
+        )}
+        {activeTab === 'chat' && (
+          <ChatView employeeMap={employeeMap} myProfileId={profile.id} isManager={false} chat={chat} />
         )}
       </main>
     </>
@@ -253,7 +277,7 @@ function AppShell({ loading, isAuthenticated, email, profile, error, onSignIn, o
     <LabelProvider>
       <div className="min-h-screen pb-16">
         <Header role={profile.role} email={email} onSignOut={onSignOut} />
-        {profile.role === 'manager' ? <ManagerApp /> : <EmployeeApp profile={profile} />}
+        {profile.role === 'manager' ? <ManagerApp profile={profile} /> : <EmployeeApp profile={profile} />}
       </div>
     </LabelProvider>
   );
