@@ -183,11 +183,12 @@ export function ChatThread({
   const canPostText = isParticipant;
   const canReact = isParticipant;
   const isBroadcast = conversation.type === 'broadcast';
-  const canPin = isBroadcast && isManager;
+  // ピン留めは参加者なら誰でも可。ただし業務連絡チャンネルのみマネージャー限定(DB側のRPCでも同じ検査をしている)。
+  const canPin = isParticipant && (!isBroadcast || isManager);
   const isManagerProfile = (profileId: string) => directory.find((d) => d.profileId === profileId)?.role === 'manager';
-  const pinnedMessages = isBroadcast
-    ? messages.filter((m) => m.pinnedAt).sort((a, b) => (b.pinnedAt ?? '').localeCompare(a.pinnedAt ?? ''))
-    : [];
+  const pinnedMessages = messages
+    .filter((m) => m.pinnedAt)
+    .sort((a, b) => (b.pinnedAt ?? '').localeCompare(a.pinnedAt ?? ''));
 
   const handleSend = async () => {
     const trimmed = text.trim();
@@ -240,7 +241,7 @@ export function ChatThread({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <span className="font-medium text-paper">{sender.name}</span>
-                    {isManagerProfile(message.senderProfileId) && (
+                    {isBroadcast && isManagerProfile(message.senderProfileId) && (
                       <span className="rounded-full bg-seal/20 px-1.5 py-[1px] text-[9px] font-medium text-seal-bright">
                         {t('chat.officialBadge')}
                       </span>
