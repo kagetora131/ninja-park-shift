@@ -177,6 +177,7 @@ export interface ChatMessageRow {
   body: string | null;
   image_path: string | null;
   created_at: string;
+  pinned_at: string | null;
 }
 
 export function mapChatMessageRow(r: ChatMessageRow): ChatMessage {
@@ -187,6 +188,7 @@ export function mapChatMessageRow(r: ChatMessageRow): ChatMessage {
     body: r.body,
     imagePath: r.image_path,
     createdAt: r.created_at,
+    pinnedAt: r.pinned_at,
   };
 }
 

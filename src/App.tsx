@@ -38,11 +38,11 @@ function useManagerTabs(chatBadgeCount: number): TabDef[] {
   const { t } = useLabelContext();
   return [
     { id: 'board', label: t('tab.board'), icon: TableProperties },
+    { id: 'chat', label: t('tab.chat'), icon: MessageSquare, badgeCount: chatBadgeCount },
     { id: 'staff', label: t('tab.staff'), icon: Users },
     { id: 'finance', label: t('tab.finance'), icon: Wallet },
     { id: 'posts', label: t('tab.posts'), icon: ClipboardList },
     { id: 'health', label: t('tab.health'), icon: HeartPulse },
-    { id: 'chat', label: t('tab.chat'), icon: MessageSquare, badgeCount: chatBadgeCount },
     { id: 'labels', label: t('tab.labels'), icon: Languages },
   ];
 }
@@ -51,8 +51,8 @@ function useEmployeeTabs(chatBadgeCount: number): TabDef[] {
   const { t } = useLabelContext();
   return [
     { id: 'myShifts', label: t('tab.myShifts'), icon: CalendarDays },
-    { id: 'myPreferences', label: t('tab.myPreferences'), icon: UserCog },
     { id: 'chat', label: t('tab.chat'), icon: MessageSquare, badgeCount: chatBadgeCount },
+    { id: 'myPreferences', label: t('tab.myPreferences'), icon: UserCog },
   ];
 }
 

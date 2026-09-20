@@ -436,10 +436,10 @@ const STRINGS = {
 
   'tab.chat': { ja: 'チャット', en: 'Chat' },
   'chat.broadcastName': { ja: '業務連絡', en: 'Announcements' },
-  'chat.broadcastReadOnlyNotice': {
-    ja: 'このチャンネルにはマネージャーからのお知らせのみ投稿されます。スタンプで反応できます。',
-    en: 'Only the manager can post here. You can react with a stamp.',
-  },
+  'chat.pinnedSectionHeading': { ja: 'ピン留め', en: 'Pinned' },
+  'chat.pinMessage': { ja: 'ピン留めする', en: 'Pin message' },
+  'chat.unpinMessage': { ja: 'ピン留めを解除', en: 'Unpin message' },
+  'chat.officialBadge': { ja: '公式', en: 'Official' },
   'chat.viewOnlyNotice': {
     ja: 'これは他のスタッフの会話です。閲覧のみで、投稿・スタンプはできません。',
     en: "This is another staff member's conversation. View-only — you can't post or react here.",

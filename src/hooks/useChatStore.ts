@@ -104,6 +104,10 @@ export function useChatStore(myProfileId: string) {
         const row = mapChatMessageRow(payload.new as ChatMessageRow);
         setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_messages' }, (payload) => {
+        const row = mapChatMessageRow(payload.new as ChatMessageRow);
+        setMessages((prev) => prev.map((m) => (m.id === row.id ? row : m)));
+      })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_message_reactions' }, (payload) => {
         const row = mapChatReactionRow(payload.new as ChatReactionRow);
         setReactions((prev) => [...prev.filter((r) => !(r.messageId === row.messageId && r.profileId === row.profileId)), row]);
@@ -255,6 +259,14 @@ export function useChatStore(myProfileId: string) {
     return data.signedUrl;
   }, []);
 
+  /** 業務連絡チャンネルのメッセージのピン留め切り替え(マネージャーのみ。権限はRPC側でも検査される)。 */
+  const togglePinMessage = useCallback(async (messageId: string, pinned: boolean) => {
+    const { error } = await supabase.rpc('set_chat_message_pinned', { p_message_id: messageId, p_pinned: pinned });
+    if (error) throw error;
+    const pinnedAt = pinned ? new Date().toISOString() : null;
+    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, pinnedAt } : m)));
+  }, []);
+
   /** 同じスタンプを再度押すと取り消し、別のスタンプを押すと差し替える。 */
   const toggleReaction = useCallback(
     async (messageId: string, stampKey: ChatStampKey) => {
@@ -293,6 +305,7 @@ export function useChatStore(myProfileId: string) {
     markConversationRead,
     uploadChatImage,
     getSignedImageUrl,
+    togglePinMessage,
     toggleReaction,
   };
 }

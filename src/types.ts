@@ -157,6 +157,8 @@ export interface ChatMessage {
   /** Supabase Storage(`chat-images`バケット)内のパス。表示には署名付きURLへの変換が必要。 */
   imagePath: string | null;
   createdAt: string;
+  /** マネージャーが業務連絡チャンネルでピン留めした日時(未ピン留めならnull)。 */
+  pinnedAt: string | null;
 }
 
 /** メッセージへのスタンプ。ネガティブな用途を防ぐため固定6種類のみ。 */

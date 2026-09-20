@@ -36,6 +36,7 @@ export function ChatView({ employeeMap, myProfileId, isManager, chat }: ChatView
     markConversationRead,
     uploadChatImage,
     getSignedImageUrl,
+    togglePinMessage,
     toggleReaction,
   } = chat;
 
@@ -131,6 +132,7 @@ export function ChatView({ employeeMap, myProfileId, isManager, chat }: ChatView
             onUploadImage={(file) => uploadChatImage(activeConversation.id, file)}
             getSignedImageUrl={getSignedImageUrl}
             onToggleReaction={toggleReaction}
+            onTogglePin={togglePinMessage}
           />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-paper-dim">

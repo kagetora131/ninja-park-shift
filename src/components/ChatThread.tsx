@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell, Eye, ImagePlus, Plus } from 'lucide-react';
+import { Eye, ImagePlus, Pin, PinOff, Plus } from 'lucide-react';
 import { ChatPersonAvatar } from './ChatPersonAvatar';
 import { getConversationDisplayName, resolveChatPerson } from '../lib/chatDisplay';
 import { useLabelContext } from '../hooks/LabelContext';
@@ -37,6 +37,7 @@ interface ChatThreadProps {
   onUploadImage: (file: File) => Promise<string>;
   getSignedImageUrl: (path: string) => Promise<string>;
   onToggleReaction: (messageId: string, stampKey: ChatStampKey) => Promise<void>;
+  onTogglePin: (messageId: string, pinned: boolean) => Promise<void>;
 }
 
 function ChatImage({ path, getSignedImageUrl }: { path: string; getSignedImageUrl: (path: string) => Promise<string> }) {
@@ -154,6 +155,7 @@ export function ChatThread({
   onUploadImage,
   getSignedImageUrl,
   onToggleReaction,
+  onTogglePin,
 }: ChatThreadProps) {
   const { locale, employeeName, t } = useLabelContext();
   const managerLabel = t('header.roleManager');
@@ -178,8 +180,14 @@ export function ChatThread({
     managerLabel,
   );
 
-  const canPostText = isParticipant && (conversation.type !== 'broadcast' || isManager);
+  const canPostText = isParticipant;
   const canReact = isParticipant;
+  const isBroadcast = conversation.type === 'broadcast';
+  const canPin = isBroadcast && isManager;
+  const isManagerProfile = (profileId: string) => directory.find((d) => d.profileId === profileId)?.role === 'manager';
+  const pinnedMessages = isBroadcast
+    ? messages.filter((m) => m.pinnedAt).sort((a, b) => (b.pinnedAt ?? '').localeCompare(a.pinnedAt ?? ''))
+    : [];
 
   const handleSend = async () => {
     const trimmed = text.trim();
@@ -219,10 +227,42 @@ export function ChatThread({
           {t('chat.viewOnlyNotice')}
         </div>
       )}
-      {isParticipant && conversation.type === 'broadcast' && !isManager && (
-        <div className="mx-4 mt-3 flex items-center gap-2 rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-gold">
-          <Bell size={14} />
-          {t('chat.broadcastReadOnlyNotice')}
+      {pinnedMessages.length > 0 && (
+        <div className="mx-4 mt-3 max-h-40 space-y-2 overflow-y-auto rounded-lg border border-gold/40 bg-gold/10 p-3">
+          <p className="flex items-center gap-1 text-[11px] font-medium text-gold">
+            <Pin size={12} />
+            {t('chat.pinnedSectionHeading')}
+          </p>
+          {pinnedMessages.map((message) => {
+            const sender = resolveChatPerson(message.senderProfileId, directory, employeeMap, employeeName, managerLabel);
+            return (
+              <div key={message.id} className="flex items-start gap-2 text-xs">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-medium text-paper">{sender.name}</span>
+                    {isManagerProfile(message.senderProfileId) && (
+                      <span className="rounded-full bg-seal/20 px-1.5 py-[1px] text-[9px] font-medium text-seal-bright">
+                        {t('chat.officialBadge')}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-paper-dim">{formatTime(message.createdAt)}</span>
+                  </div>
+                  {message.body && <p className="mt-0.5 whitespace-pre-wrap text-paper">{message.body}</p>}
+                  {message.imagePath && <ChatImage path={message.imagePath} getSignedImageUrl={getSignedImageUrl} />}
+                </div>
+                {canPin && (
+                  <button
+                    type="button"
+                    onClick={() => onTogglePin(message.id, false)}
+                    title={t('chat.unpinMessage')}
+                    className="text-gold transition hover:text-paper"
+                  >
+                    <PinOff size={13} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -230,13 +270,29 @@ export function ChatThread({
         {messages.length === 0 && <p className="text-xs text-paper-dim">{t('chat.noMessages')}</p>}
         {messages.map((message) => {
           const sender = resolveChatPerson(message.senderProfileId, directory, employeeMap, employeeName, managerLabel);
+          const isPinned = !!message.pinnedAt;
           return (
             <div key={message.id} className="flex items-start gap-2">
               <ChatPersonAvatar employee={sender.employee} size="sm" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2">
                   <span className="text-xs font-medium text-paper">{sender.name}</span>
+                  {isBroadcast && isManagerProfile(message.senderProfileId) && (
+                    <span className="rounded-full bg-seal/20 px-1.5 py-[1px] text-[9px] font-medium text-seal-bright">
+                      {t('chat.officialBadge')}
+                    </span>
+                  )}
                   <span className="text-[10px] text-paper-dim">{formatTime(message.createdAt)}</span>
+                  {canPin && (
+                    <button
+                      type="button"
+                      onClick={() => onTogglePin(message.id, !isPinned)}
+                      title={isPinned ? t('chat.unpinMessage') : t('chat.pinMessage')}
+                      className={`self-center transition ${isPinned ? 'text-gold' : 'text-paper-dim hover:text-gold'}`}
+                    >
+                      <Pin size={11} />
+                    </button>
+                  )}
                 </div>
                 {message.body && <p className="mt-0.5 whitespace-pre-wrap text-sm text-paper">{message.body}</p>}
                 {message.imagePath && <ChatImage path={message.imagePath} getSignedImageUrl={getSignedImageUrl} />}
