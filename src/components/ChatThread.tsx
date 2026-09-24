@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Eye, ImagePlus, Pencil, Pin, PinOff, Plus, Undo2 } from 'lucide-react';
+import { ArrowLeft, Eye, ImagePlus, LogOut, Pencil, Pin, PinOff, Plus, Undo2, UserPlus, Users, X } from 'lucide-react';
 import { ChatPersonAvatar } from './ChatPersonAvatar';
+import { AddMembersModal } from './AddMembersModal';
 import { getConversationDisplayName, resolveChatPerson } from '../lib/chatDisplay';
 import { useLabelContext } from '../hooks/LabelContext';
 import { CHAT_EDIT_WINDOW_MS } from '../hooks/useChatStore';
@@ -53,6 +54,9 @@ interface ChatThreadProps {
   onDeleteMessage: (messageId: string) => Promise<void>;
   /** スマホ表示で会話一覧へ戻るためのボタン用(PC幅では表示しない)。 */
   onBack: () => void;
+  onAddMembers: (memberProfileIds: string[]) => Promise<void>;
+  onLeaveGroup: () => Promise<void>;
+  onRemoveMember: (profileId: string) => Promise<void>;
 }
 
 function ChatImage({ path, getSignedImageUrl }: { path: string; getSignedImageUrl: (path: string) => Promise<string> }) {
@@ -175,6 +179,9 @@ export function ChatThread({
   onEditMessage,
   onDeleteMessage,
   onBack,
+  onAddMembers,
+  onLeaveGroup,
+  onRemoveMember,
 }: ChatThreadProps) {
   const { locale, employeeName, t } = useLabelContext();
   const managerLabel = t('header.roleManager');
@@ -186,6 +193,8 @@ export function ChatThread({
   const [editDraft, setEditDraft] = useState('');
   const [openHistoryId, setOpenHistoryId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [membersOpen, setMembersOpen] = useState(false);
+  const [addMembersOpen, setAddMembersOpen] = useState(false);
   // 編集・取り消しボタンを24時間経過で消すため、現在時刻を1分ごとに更新する
   const [now, setNow] = useState(() => Date.now());
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -281,6 +290,33 @@ export function ChatThread({
     await runAction(() => onDeleteMessage(messageId));
   };
 
+  // スタンプ・ピン留めも失敗時はスレッド上部に理由を表示する(以前は失敗しても無反応だった)
+  const handleToggleReaction = async (messageId: string, stampKey: ChatStampKey) => {
+    await runAction(() => onToggleReaction(messageId, stampKey));
+  };
+
+  const handleTogglePin = async (messageId: string, pinned: boolean) => {
+    await runAction(() => onTogglePin(messageId, pinned));
+  };
+
+  const isGroup = conversation.type === 'group';
+  const canManageMembers = isGroup && isParticipant;
+  const isGroupCreator = isGroup && conversation.createdBy === myProfileId;
+
+  const handleAddMembers = async (memberProfileIds: string[]) => {
+    if (await runAction(() => onAddMembers(memberProfileIds))) setAddMembersOpen(false);
+  };
+
+  const handleLeaveGroup = async () => {
+    if (!window.confirm(t('chat.confirmLeave'))) return;
+    await runAction(onLeaveGroup);
+  };
+
+  const handleRemoveMember = async (profileId: string, name: string) => {
+    if (!window.confirm(t('chat.confirmRemove', { name }))) return;
+    await runAction(() => onRemoveMember(profileId));
+  };
+
   const canModify = (message: ChatMessage) =>
     isParticipant &&
     message.senderProfileId === myProfileId &&
@@ -302,13 +338,84 @@ export function ChatThread({
         >
           <ArrowLeft size={18} />
         </button>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h3 className="truncate font-mincho text-sm font-bold text-paper">{title}</h3>
           {conversation.type !== 'broadcast' && (
             <p className="mt-0.5 text-[10px] text-paper-dim">{t('chat.managerVisibilityNotice')}</p>
           )}
         </div>
+        {canManageMembers && (
+          <button
+            type="button"
+            onClick={() => setMembersOpen((v) => !v)}
+            className={`flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition ${
+              membersOpen ? 'border-gold text-gold' : 'border-paper/20 text-paper-dim hover:border-gold hover:text-gold'
+            }`}
+          >
+            <Users size={12} />
+            {t('chat.members', { count: memberIds.length })}
+          </button>
+        )}
       </div>
+
+      {canManageMembers && membersOpen && (
+        <div className="border-b border-paper/10 bg-void/30 px-4 py-3">
+          <div className="flex flex-wrap gap-1.5">
+            {memberIds.map((profileId) => {
+              const person = resolveChatPerson(profileId, directory, employeeMap, employeeName, managerLabel);
+              const isCreator = profileId === conversation.createdBy;
+              return (
+                <span
+                  key={profileId}
+                  className="flex items-center gap-1 rounded-full border border-paper/15 bg-void/40 px-2 py-0.5 text-[11px] text-paper"
+                >
+                  {person.name}
+                  {isCreator && <span className="text-[9px] text-gold">{t('chat.creator')}</span>}
+                  {isGroupCreator && profileId !== myProfileId && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveMember(profileId, person.name)}
+                      title={t('chat.removeMember')}
+                      aria-label={t('chat.removeMember')}
+                      className="text-paper-dim transition hover:text-seal-bright"
+                    >
+                      <X size={11} />
+                    </button>
+                  )}
+                </span>
+              );
+            })}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => setAddMembersOpen(true)}
+              className="flex items-center gap-1 rounded-full border border-paper/20 px-2.5 py-1 text-[11px] text-paper-dim transition hover:border-gold hover:text-gold"
+            >
+              <UserPlus size={12} />
+              {t('chat.addMembers')}
+            </button>
+            <button
+              type="button"
+              onClick={handleLeaveGroup}
+              className="flex items-center gap-1 rounded-full border border-paper/20 px-2.5 py-1 text-[11px] text-paper-dim transition hover:border-seal hover:text-seal-bright"
+            >
+              <LogOut size={12} />
+              {t('chat.leaveGroup')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {addMembersOpen && (
+        <AddMembersModal
+          directory={directory}
+          employeeMap={employeeMap}
+          currentMemberIds={new Set(memberIds)}
+          onAdd={handleAddMembers}
+          onClose={() => setAddMembersOpen(false)}
+        />
+      )}
 
       {actionError && (
         <p className="mx-4 mt-3 rounded-lg border border-seal/40 bg-seal/10 px-3 py-2 text-xs text-seal-bright">
@@ -348,7 +455,7 @@ export function ChatThread({
                 {canPin && (
                   <button
                     type="button"
-                    onClick={() => onTogglePin(message.id, false)}
+                    onClick={() => handleTogglePin(message.id, false)}
                     title={t('chat.unpinMessage')}
                     className="text-gold transition hover:text-paper"
                   >
@@ -401,7 +508,7 @@ export function ChatThread({
                   {canPin && !isDeleted && (
                     <button
                       type="button"
-                      onClick={() => onTogglePin(message.id, !isPinned)}
+                      onClick={() => handleTogglePin(message.id, !isPinned)}
                       title={isPinned ? t('chat.unpinMessage') : t('chat.pinMessage')}
                       className={`self-center transition ${isPinned ? 'text-gold' : 'text-paper-dim hover:text-gold'}`}
                     >
@@ -506,7 +613,7 @@ export function ChatThread({
                     employeeMap={employeeMap}
                     myProfileId={myProfileId}
                     canReact={canReact}
-                    onToggle={onToggleReaction}
+                    onToggle={handleToggleReaction}
                   />
                 )}
               </div>

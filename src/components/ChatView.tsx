@@ -61,6 +61,9 @@ export function ChatView({ employeeMap, myProfileId, isManager, chat }: ChatView
     revisionsByMessage,
     editMessage,
     deleteMessage,
+    addGroupMembers,
+    leaveGroup,
+    removeGroupMember,
   } = chat;
 
   // 未選択時は業務連絡チャンネルを既定表示にする(setStateを使わずrender時に導出する)。
@@ -170,6 +173,14 @@ export function ChatView({ employeeMap, myProfileId, isManager, chat }: ChatView
             onEditMessage={editMessage}
             onDeleteMessage={deleteMessage}
             onBack={() => setMobileThreadOpen(false)}
+            onAddMembers={(ids) => addGroupMembers(activeConversation.id, ids)}
+            onLeaveGroup={async () => {
+              await leaveGroup(activeConversation.id);
+              // 退出後はその会話を開いたままにしない(マネージャーだと閲覧専用として残ってしまうため)
+              setActiveId(null);
+              setMobileThreadOpen(false);
+            }}
+            onRemoveMember={(profileId) => removeGroupMember(activeConversation.id, profileId)}
           />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-paper-dim">

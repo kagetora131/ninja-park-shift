@@ -151,11 +151,19 @@ export function useChatStore(myProfileId: string, isManager: boolean) {
         const old = payload.old as Partial<ChatReactionRow>;
         setReactions((prev) => prev.filter((r) => !(r.messageId === old.message_id && r.profileId === old.profile_id)));
       })
+      // グループにメンバーが追加されたら取り直す(追加された本人の一覧にグループと過去ログが現れる)。
+      // DELETEはRLSが効かず全購読者に配信されるため購読しない(退出・除外は操作した本人側で取り直す)。
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_conversation_members' }, () => {
+        refetchConversations();
+        refetchMembers();
+        refetchMessages();
+        refetchReactions();
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refetchRevisions]);
+  }, [refetchRevisions, refetchConversations, refetchMembers, refetchMessages, refetchReactions]);
 
   const memberIdsByConversation = useMemo(() => {
     const map = new Map<string, Set<string>>();
@@ -264,6 +272,42 @@ export function useChatStore(myProfileId: string, isManager: boolean) {
     [refetchConversations, refetchMembers],
   );
 
+  /** グループへのメンバー追加(参加者なら誰でも可)。 */
+  const addGroupMembers = useCallback(
+    async (conversationId: string, memberProfileIds: string[]) => {
+      const { error } = await supabase.rpc('add_chat_group_members', {
+        p_conversation_id: conversationId,
+        p_member_profile_ids: memberProfileIds,
+      });
+      if (error) throw error;
+      await refetchMembers();
+    },
+    [refetchMembers],
+  );
+
+  /** グループからの退出(自分のみ)。退出後はRLSで見えなくなる会話・メッセージを取り直す。 */
+  const leaveGroup = useCallback(
+    async (conversationId: string) => {
+      const { error } = await supabase.rpc('leave_chat_group', { p_conversation_id: conversationId });
+      if (error) throw error;
+      await Promise.all([refetchConversations(), refetchMembers(), refetchMessages(), refetchReactions()]);
+    },
+    [refetchConversations, refetchMembers, refetchMessages, refetchReactions],
+  );
+
+  /** 他のメンバーをグループから外す(グループ作成者のみ)。 */
+  const removeGroupMember = useCallback(
+    async (conversationId: string, profileId: string) => {
+      const { error } = await supabase.rpc('remove_chat_group_member', {
+        p_conversation_id: conversationId,
+        p_profile_id: profileId,
+      });
+      if (error) throw error;
+      await refetchMembers();
+    },
+    [refetchMembers],
+  );
+
   /** 自分が参加している会話を開いたときだけ呼ぶ想定(マネージャーが閲覧目的で他人の会話を開いたときは呼ばない)。 */
   const markConversationRead = useCallback(
     async (conversationId: string) => {
@@ -337,13 +381,20 @@ export function useChatStore(myProfileId: string, isManager: boolean) {
   const toggleReaction = useCallback(
     async (messageId: string, stampKey: ChatStampKey) => {
       const existing = reactions.find((r) => r.messageId === messageId && r.profileId === myProfileId);
+      // supabase-jsは失敗してもthrowせずerrorを返すので、明示的に投げて画面側でエラー表示させる
       if (existing && existing.stampKey === stampKey) {
-        await supabase.from('chat_message_reactions').delete().eq('message_id', messageId).eq('profile_id', myProfileId);
+        const { error } = await supabase
+          .from('chat_message_reactions')
+          .delete()
+          .eq('message_id', messageId)
+          .eq('profile_id', myProfileId);
+        if (error) throw error;
         setReactions((prev) => prev.filter((r) => !(r.messageId === messageId && r.profileId === myProfileId)));
       } else {
-        await supabase
+        const { error } = await supabase
           .from('chat_message_reactions')
           .upsert({ message_id: messageId, profile_id: myProfileId, stamp_key: stampKey });
+        if (error) throw error;
         setReactions((prev) => [
           ...prev.filter((r) => !(r.messageId === messageId && r.profileId === myProfileId)),
           { messageId, profileId: myProfileId, stampKey, createdAt: new Date().toISOString() },
@@ -376,5 +427,8 @@ export function useChatStore(myProfileId: string, isManager: boolean) {
     revisionsByMessage,
     editMessage,
     deleteMessage,
+    addGroupMembers,
+    leaveGroup,
+    removeGroupMember,
   };
 }
