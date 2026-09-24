@@ -9,6 +9,17 @@ function toUtcDate(date: string): Date {
   return new Date(`${date}T00:00:00Z`);
 }
 
+/**
+ * 端末のローカル時刻での今日("YYYY-MM-DD")。
+ * `new Date().toISOString()`はUTCなので、日本時間の0:00〜8:59に前日の日付になってしまう。
+ */
+export function todayLocalIso(): string {
+  const d = new Date();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${month}-${day}`;
+}
+
 const WEEKDAY_JP = ['日', '月', '火', '水', '木', '金', '土'];
 const WEEKDAY_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 

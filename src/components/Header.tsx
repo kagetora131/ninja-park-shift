@@ -1,6 +1,6 @@
 import { LogOut, Swords } from 'lucide-react';
 import { useLabelContext } from '../hooks/LabelContext';
-import { formatDateJp } from '../lib/format';
+import { formatDateJp, todayLocalIso } from '../lib/format';
 import type { UserRole } from '../types';
 
 interface HeaderProps {
@@ -14,7 +14,7 @@ export function Header({ role, email, onSignOut }: HeaderProps) {
 
   // シフト表(カレンダー機能)を持つアプリなので、開くたびに「今の実際の日付」を
   // 常に確認できるよう、ヘッダーに本日の日付を表示する。
-  const todayLabel = formatDateJp(new Date().toISOString().slice(0, 10), locale);
+  const todayLabel = formatDateJp(todayLocalIso(), locale);
 
   return (
     <header className="border-b border-paper/10 bg-void-soft/60 backdrop-blur">

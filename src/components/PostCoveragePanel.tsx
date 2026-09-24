@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { AlertTriangle, Check, TrendingUp, Users } from 'lucide-react';
 import { FACILITY_COLOR } from '../data/facilities';
-import { formatDateJp, shiftDate } from '../lib/format';
+import { formatDateJp, shiftDate, todayLocalIso } from '../lib/format';
 import { computeCoverageRows, type CoverageRow, type CoverageStatus } from '../lib/postCoverage';
 import { useLabelContext } from '../hooks/LabelContext';
 import type { PostRequirements, ShiftEntry } from '../types';
@@ -19,7 +19,7 @@ function rowKey(row: Pick<CoverageRow, 'date' | 'facility'>): string {
 
 /** 実機の「今日」を含む月曜始まりの週(月〜日)の日付範囲。 */
 function currentWeekRange(): { start: string; end: string } {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalIso();
   const jsWeekday = new Date(`${today}T00:00:00Z`).getUTCDay(); // 0=Sun..6=Sat
   const mondayOffset = jsWeekday === 0 ? -6 : 1 - jsWeekday;
   return { start: shiftDate(today, mondayOffset), end: shiftDate(today, mondayOffset + 6) };
@@ -35,7 +35,7 @@ export function PostCoveragePanel({ dates, shifts, postRequirements, onSelectDat
 
   const allRows = useMemo(() => computeCoverageRows(dates, shifts, postRequirements), [dates, shifts, postRequirements]);
 
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const today = useMemo(() => todayLocalIso(), []);
   const week = useMemo(() => currentWeekRange(), []);
 
   const scopedRows = useMemo(() => {

@@ -3,7 +3,7 @@ import { ArrowLeftRight, Bell, Check, ChevronLeft, ChevronRight, Copy, Users } f
 import { NinjaAvatar } from './NinjaAvatar';
 import { FACILITY_COLOR, FACILITY_ORDER, capableFacilities, sortEmployeesByFacility } from '../data/facilities';
 import { FACILITY_ICON } from './facilityIcon';
-import { formatDateJp, weekdayJp } from '../lib/format';
+import { formatDateJp, todayLocalIso, weekdayJp } from '../lib/format';
 import { MOOD_COLOR } from '../lib/mood';
 import { translateReason, formatMonthLabel } from '../lib/i18n';
 import {
@@ -26,7 +26,7 @@ interface MyShiftsViewProps {
 }
 
 function todayOr(dates: string[]): string {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalIso();
   return dates.includes(today) ? today : (dates[0] ?? '');
 }
 
