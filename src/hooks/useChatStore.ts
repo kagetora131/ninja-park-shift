@@ -3,14 +3,26 @@ import { supabase } from '../lib/supabaseClient';
 import {
   mapChatConversationRow,
   mapChatDirectoryRow,
+  mapChatMessageRevisionRow,
   mapChatMessageRow,
   mapChatReactionRow,
   type ChatConversationRow,
   type ChatDirectoryRow,
+  type ChatMessageRevisionRow,
   type ChatMessageRow,
   type ChatReactionRow,
 } from '../data/supabaseMappers';
-import type { ChatConversation, ChatDirectoryEntry, ChatMessage, ChatReaction, ChatStampKey } from '../types';
+import type {
+  ChatConversation,
+  ChatDirectoryEntry,
+  ChatMessage,
+  ChatMessageRevision,
+  ChatReaction,
+  ChatStampKey,
+} from '../types';
+
+/** 送信後、本人が編集・取り消しできる期間(DB側のRPCと同じ24時間)。 */
+export const CHAT_EDIT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 interface MemberRow {
   conversationId: string;
@@ -29,8 +41,9 @@ interface ReadRow {
  * useShiftStoreと同じ「取得できたものをそのままstateにする、更新後はrefetch」方式に
  * Supabase Realtimeの購読を1本追加する形。行の可視範囲はRLSに任せる。
  */
-export function useChatStore(myProfileId: string) {
+export function useChatStore(myProfileId: string, isManager: boolean) {
   const [loading, setLoading] = useState(true);
+  const [revisions, setRevisions] = useState<ChatMessageRevision[]>([]);
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -82,6 +95,13 @@ export function useChatStore(myProfileId: string) {
     setDirectory(((data as ChatDirectoryRow[]) ?? []).map(mapChatDirectoryRow));
   }, []);
 
+  /** 編集・取り消し前の原文。RLSでマネージャー以外は0件になるため、マネージャーのときだけ取得する。 */
+  const refetchRevisions = useCallback(async () => {
+    if (!isManager) return;
+    const { data } = await supabase.from('chat_message_revisions').select('*').order('created_at');
+    setRevisions(((data as ChatMessageRevisionRow[]) ?? []).map(mapChatMessageRevisionRow));
+  }, [isManager]);
+
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -92,10 +112,19 @@ export function useChatStore(myProfileId: string) {
         refetchReactions(),
         refetchReads(),
         refetchDirectory(),
+        refetchRevisions(),
       ]);
       setLoading(false);
     })();
-  }, [refetchConversations, refetchMembers, refetchMessages, refetchReactions, refetchReads, refetchDirectory]);
+  }, [
+    refetchConversations,
+    refetchMembers,
+    refetchMessages,
+    refetchReactions,
+    refetchReads,
+    refetchDirectory,
+    refetchRevisions,
+  ]);
 
   useEffect(() => {
     const channel = supabase
@@ -107,6 +136,8 @@ export function useChatStore(myProfileId: string) {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_messages' }, (payload) => {
         const row = mapChatMessageRow(payload.new as ChatMessageRow);
         setMessages((prev) => prev.map((m) => (m.id === row.id ? row : m)));
+        // 編集・取り消しで履歴が増えている可能性があるので取り直す(マネージャー以外は何もしない)
+        refetchRevisions();
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_message_reactions' }, (payload) => {
         const row = mapChatReactionRow(payload.new as ChatReactionRow);
@@ -124,7 +155,7 @@ export function useChatStore(myProfileId: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [refetchRevisions]);
 
   const memberIdsByConversation = useMemo(() => {
     const map = new Map<string, Set<string>>();
@@ -259,6 +290,41 @@ export function useChatStore(myProfileId: string) {
     return data.signedUrl;
   }, []);
 
+  const revisionsByMessage = useMemo(() => {
+    const map = new Map<string, ChatMessageRevision[]>();
+    for (const r of revisions) {
+      if (!map.has(r.messageId)) map.set(r.messageId, []);
+      map.get(r.messageId)!.push(r);
+    }
+    return map;
+  }, [revisions]);
+
+  /** 自分のテキストメッセージの編集(送信から24時間以内。権限と期限はRPC側でも検査される)。 */
+  const editMessage = useCallback(
+    async (messageId: string, body: string) => {
+      const { error } = await supabase.rpc('edit_chat_message', { p_message_id: messageId, p_body: body });
+      if (error) throw error;
+      const editedAt = new Date().toISOString();
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, body: body.trim(), editedAt } : m)));
+      await refetchRevisions();
+    },
+    [refetchRevisions],
+  );
+
+  /** 自分のメッセージの取り消し(送信から24時間以内)。原文はマネージャー用の履歴にだけ残る。 */
+  const deleteMessage = useCallback(
+    async (messageId: string) => {
+      const { error } = await supabase.rpc('delete_chat_message', { p_message_id: messageId });
+      if (error) throw error;
+      const deletedAt = new Date().toISOString();
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, body: null, imagePath: null, pinnedAt: null, deletedAt } : m)),
+      );
+      await refetchRevisions();
+    },
+    [refetchRevisions],
+  );
+
   /** 業務連絡チャンネルのメッセージのピン留め切り替え(マネージャーのみ。権限はRPC側でも検査される)。 */
   const togglePinMessage = useCallback(async (messageId: string, pinned: boolean) => {
     const { error } = await supabase.rpc('set_chat_message_pinned', { p_message_id: messageId, p_pinned: pinned });
@@ -307,5 +373,8 @@ export function useChatStore(myProfileId: string) {
     getSignedImageUrl,
     togglePinMessage,
     toggleReaction,
+    revisionsByMessage,
+    editMessage,
+    deleteMessage,
   };
 }

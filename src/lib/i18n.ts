@@ -436,6 +436,23 @@ const STRINGS = {
 
   'tab.chat': { ja: 'チャット', en: 'Chat' },
   'chat.broadcastName': { ja: '業務連絡', en: 'Announcements' },
+  'chat.sendFailed': {
+    ja: '送信できませんでした。通信状況を確認して、もう一度お試しください。',
+    en: "Couldn't send. Check your connection and try again.",
+  },
+  'chat.back': { ja: '会話一覧に戻る', en: 'Back to conversations' },
+  'chat.editMessage': { ja: '編集', en: 'Edit' },
+  'chat.deleteMessage': { ja: '送信取消', en: 'Unsend' },
+  'chat.confirmDelete': {
+    ja: 'このメッセージを取り消しますか？(マネージャーには原文が記録として残ります)',
+    en: 'Unsend this message? (The manager can still see the original for the record.)',
+  },
+  'chat.deletedMessage': { ja: 'このメッセージは取り消されました', en: 'This message was unsent' },
+  'chat.deletedOriginalLabel': { ja: '取り消し前の原文(マネージャーのみ表示)', en: 'Original before unsend (manager only)' },
+  'chat.edited': { ja: '編集済み', en: 'edited' },
+  'chat.editHistory': { ja: '編集履歴', en: 'Edit history' },
+  'chat.editHistoryItem': { ja: '{time} 時点', en: 'As of {time}' },
+  'chat.actionFailed': { ja: '操作できませんでした: {message}', en: 'Action failed: {message}' },
   'chat.pinnedSectionHeading': { ja: 'ピン留め', en: 'Pinned' },
   'chat.pinMessage': { ja: 'ピン留めする', en: 'Pin message' },
   'chat.unpinMessage': { ja: 'ピン留めを解除', en: 'Unpin message' },

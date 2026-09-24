@@ -204,8 +204,8 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
                 return (
                   <th
                     key={emp.id}
-                    className={`sticky top-0 z-20 min-w-[80px] border-b border-r border-paper/10 px-1 py-2 text-center font-medium ${
-                      isMe ? 'bg-gold/15' : 'bg-void-soft'
+                    className={`sticky top-0 z-20 min-w-[80px] border-b px-1 py-2 text-center font-medium ${
+                      isMe ? 'border-x border-x-gold/50 border-b-paper/10 bg-[#2a2519]' : 'border-r border-paper/10 bg-void-soft'
                     }`}
                     style={{ borderTop: `3px solid ${FACILITY_COLOR[emp.mainFacility]}` }}
                     title={`${employeeName(emp)} (${facilityName(emp.mainFacility)})`}
@@ -239,14 +239,21 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
                         <td
                           key={emp.id}
                           onClick={() => setSelectedDate(date)}
-                          className={`cursor-pointer border-b border-r border-paper/5 p-0.5 ${isMe ? 'bg-gold/5' : ''}`}
+                          className={`cursor-pointer border-b border-b-paper/5 p-0.5 ${
+                            isMe ? 'border-x border-x-gold/50 bg-gold/10' : 'border-r border-r-paper/5'
+                          }`}
                         />
                       );
                     }
                     const mood = moodMap.get(shift.id);
                     const isChanged = isMe && changedShiftIds.has(shift.id);
                     return (
-                      <td key={emp.id} className="border-b border-r border-paper/5 p-0.5">
+                      <td
+                        key={emp.id}
+                        className={`border-b border-b-paper/5 p-0.5 ${
+                          isMe ? 'border-x border-x-gold/50 bg-gold/10' : 'border-r border-r-paper/5'
+                        }`}
+                      >
                         <button
                           type="button"
                           onClick={() => setSelectedDate(date)}

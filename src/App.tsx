@@ -77,7 +77,7 @@ function ManagerApp({ profile }: { profile: Profile }) {
     updateFulltimeMonthlySalary,
     updatePostRequirement,
   } = useShiftStore();
-  const chat = useChatStore(profile.id);
+  const chat = useChatStore(profile.id, true);
   const { t } = useLabelContext();
   const managerTabs = useManagerTabs(chat.totalUnreadCount);
   const [activeTab, setActiveTab] = useState('board');
@@ -192,7 +192,7 @@ function ManagerApp({ profile }: { profile: Profile }) {
 
 function EmployeeApp({ profile }: { profile: Profile }) {
   const { employees, employeeMap, shifts, moodMap, refetchEmployees } = useShiftStore();
-  const chat = useChatStore(profile.id);
+  const chat = useChatStore(profile.id, false);
   const { t } = useLabelContext();
   const employeeTabs = useEmployeeTabs(chat.totalUnreadCount);
   const [activeTab, setActiveTab] = useState('myShifts');

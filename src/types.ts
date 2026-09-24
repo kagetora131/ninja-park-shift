@@ -159,6 +159,19 @@ export interface ChatMessage {
   createdAt: string;
   /** マネージャーが業務連絡チャンネルでピン留めした日時(未ピン留めならnull)。 */
   pinnedAt: string | null;
+  editedAt: string | null;
+  /** 取り消し日時。取り消し済みならbody/imagePathはnull(原文はマネージャーだけが履歴から見られる)。 */
+  deletedAt: string | null;
+}
+
+/** 編集・取り消し前の原文(マネージャーのみ取得可能)。 */
+export interface ChatMessageRevision {
+  id: string;
+  messageId: string;
+  kind: 'edit' | 'delete';
+  previousBody: string | null;
+  previousImagePath: string | null;
+  createdAt: string;
 }
 
 /** メッセージへのスタンプ。ネガティブな用途を防ぐため固定6種類のみ。 */

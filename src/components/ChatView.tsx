@@ -14,12 +14,32 @@ interface ChatViewProps {
   chat: ReturnType<typeof useChatStore>;
 }
 
-/** チャットタブの本体。会話一覧(左)+スレッド(右)の2ペイン構成。 */
+const DESKTOP_QUERY = '(min-width: 768px)';
+
+/** Tailwindの`md`ブレークポイント以上(2ペイン表示)かどうか。 */
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(() => window.matchMedia(DESKTOP_QUERY).matches);
+  useEffect(() => {
+    const mql = window.matchMedia(DESKTOP_QUERY);
+    const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
+  return isDesktop;
+}
+
+/**
+ * チャットタブの本体。PC幅では会話一覧(左)+スレッド(右)の2ペイン、
+ * スマホ幅では「一覧→タップでスレッド→戻る」の1ペイン切り替えにする。
+ */
 export function ChatView({ employeeMap, myProfileId, isManager, chat }: ChatViewProps) {
   const { t } = useLabelContext();
+  const isDesktop = useIsDesktop();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
   const [showNewDm, setShowNewDm] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
+  const threadVisible = isDesktop || mobileThreadOpen;
 
   const {
     directory,
@@ -38,6 +58,9 @@ export function ChatView({ employeeMap, myProfileId, isManager, chat }: ChatView
     getSignedImageUrl,
     togglePinMessage,
     toggleReaction,
+    revisionsByMessage,
+    editMessage,
+    deleteMessage,
   } = chat;
 
   // 未選択時は業務連絡チャンネルを既定表示にする(setStateを使わずrender時に導出する)。
@@ -49,27 +72,33 @@ export function ChatView({ employeeMap, myProfileId, isManager, chat }: ChatView
   const activeIsParticipant = activeConversation ? isParticipant(activeConversation) : false;
   const activeMessages = activeConversation ? messagesByConversation.get(activeConversation.id) ?? [] : [];
 
+  // スマホで一覧だけを見ている間は、既定の会話を既読にしない
   useEffect(() => {
-    if (activeConversation && activeIsParticipant) {
+    if (threadVisible && activeConversation && activeIsParticipant) {
       markConversationRead(activeConversation.id);
     }
-  }, [activeConversation, activeIsParticipant, activeMessages.length, markConversationRead]);
+  }, [threadVisible, activeConversation, activeIsParticipant, activeMessages.length, markConversationRead]);
+
+  const openConversation = (id: string) => {
+    setActiveId(id);
+    setMobileThreadOpen(true);
+  };
 
   const handleSelectDm = async (otherProfileId: string) => {
     const id = await createDirectConversation(otherProfileId);
-    setActiveId(id);
+    openConversation(id);
     setShowNewDm(false);
   };
 
   const handleCreateGroup = async (name: string, memberProfileIds: string[]) => {
     const id = await createGroupConversation(name, memberProfileIds);
-    setActiveId(id);
+    openConversation(id);
     setShowNewGroup(false);
   };
 
   return (
     <div className="flex h-[70vh] gap-4">
-      <div className="w-64 shrink-0 overflow-y-auto">
+      <div className={`${mobileThreadOpen ? 'hidden' : 'block'} w-full overflow-y-auto md:block md:w-64 md:shrink-0`}>
         <div className="mb-3 flex gap-1.5">
           <button
             type="button"
@@ -91,7 +120,7 @@ export function ChatView({ employeeMap, myProfileId, isManager, chat }: ChatView
           heading={isManager ? t('chat.myConversations') : undefined}
           conversations={myConversations}
           activeId={effectiveActiveId}
-          onSelect={setActiveId}
+          onSelect={openConversation}
           unreadCounts={unreadCounts}
           employeeMap={employeeMap}
           directory={directory}
@@ -105,7 +134,7 @@ export function ChatView({ employeeMap, myProfileId, isManager, chat }: ChatView
               heading={t('chat.allStaffConversations')}
               conversations={otherConversations}
               activeId={effectiveActiveId}
-              onSelect={setActiveId}
+              onSelect={openConversation}
               unreadCounts={new Map()}
               employeeMap={employeeMap}
               directory={directory}
@@ -116,9 +145,13 @@ export function ChatView({ employeeMap, myProfileId, isManager, chat }: ChatView
         )}
       </div>
 
-      <div className="flex-1 overflow-hidden rounded-xl border border-paper/10 bg-void-soft/30">
-        {activeConversation ? (
+      <div
+        className={`${mobileThreadOpen ? 'block' : 'hidden'} min-w-0 flex-1 overflow-hidden rounded-xl border border-paper/10 bg-void-soft/30 md:block`}
+      >
+        {/* 表示中のときだけ描画し、会話ごとに作り直す(開いた時点で最新メッセージまでスクロールさせ、入力途中の文や編集状態を他の会話に持ち越さないため) */}
+        {activeConversation && threadVisible ? (
           <ChatThread
+            key={activeConversation.id}
             conversation={activeConversation}
             messages={activeMessages}
             employeeMap={employeeMap}
@@ -133,6 +166,10 @@ export function ChatView({ employeeMap, myProfileId, isManager, chat }: ChatView
             getSignedImageUrl={getSignedImageUrl}
             onToggleReaction={toggleReaction}
             onTogglePin={togglePinMessage}
+            revisionsByMessage={revisionsByMessage}
+            onEditMessage={editMessage}
+            onDeleteMessage={deleteMessage}
+            onBack={() => setMobileThreadOpen(false)}
           />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-paper-dim">

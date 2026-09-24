@@ -3,6 +3,7 @@ import type {
   ChatConversationType,
   ChatDirectoryEntry,
   ChatMessage,
+  ChatMessageRevision,
   ChatReaction,
   ChatStampKey,
   Employee,
@@ -178,6 +179,8 @@ export interface ChatMessageRow {
   image_path: string | null;
   created_at: string;
   pinned_at: string | null;
+  edited_at: string | null;
+  deleted_at: string | null;
 }
 
 export function mapChatMessageRow(r: ChatMessageRow): ChatMessage {
@@ -189,6 +192,28 @@ export function mapChatMessageRow(r: ChatMessageRow): ChatMessage {
     imagePath: r.image_path,
     createdAt: r.created_at,
     pinnedAt: r.pinned_at,
+    editedAt: r.edited_at,
+    deletedAt: r.deleted_at,
+  };
+}
+
+export interface ChatMessageRevisionRow {
+  id: string;
+  message_id: string;
+  kind: string;
+  previous_body: string | null;
+  previous_image_path: string | null;
+  created_at: string;
+}
+
+export function mapChatMessageRevisionRow(r: ChatMessageRevisionRow): ChatMessageRevision {
+  return {
+    id: r.id,
+    messageId: r.message_id,
+    kind: r.kind as ChatMessageRevision['kind'],
+    previousBody: r.previous_body,
+    previousImagePath: r.previous_image_path,
+    createdAt: r.created_at,
   };
 }
 

@@ -1,9 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
-import { Eye, ImagePlus, Pin, PinOff, Plus } from 'lucide-react';
+import { ArrowLeft, Eye, ImagePlus, Pencil, Pin, PinOff, Plus, Undo2 } from 'lucide-react';
 import { ChatPersonAvatar } from './ChatPersonAvatar';
 import { getConversationDisplayName, resolveChatPerson } from '../lib/chatDisplay';
 import { useLabelContext } from '../hooks/LabelContext';
-import type { ChatConversation, ChatDirectoryEntry, ChatMessage, ChatReaction, ChatStampKey, Employee } from '../types';
+import { CHAT_EDIT_WINDOW_MS } from '../hooks/useChatStore';
+import type {
+  ChatConversation,
+  ChatDirectoryEntry,
+  ChatMessage,
+  ChatMessageRevision,
+  ChatReaction,
+  ChatStampKey,
+  Employee,
+} from '../types';
 
 const STAMP_KEYS: ChatStampKey[] = ['ninja', 'thumbs_up', 'cheer', 'muscle', 'fire', 'thanks'];
 const STAMP_EMOJI: Record<ChatStampKey, string> = {
@@ -38,6 +47,12 @@ interface ChatThreadProps {
   getSignedImageUrl: (path: string) => Promise<string>;
   onToggleReaction: (messageId: string, stampKey: ChatStampKey) => Promise<void>;
   onTogglePin: (messageId: string, pinned: boolean) => Promise<void>;
+  /** マネージャーのときだけ中身がある(RLSで他のロールは取得できない)。 */
+  revisionsByMessage: Map<string, ChatMessageRevision[]>;
+  onEditMessage: (messageId: string, body: string) => Promise<void>;
+  onDeleteMessage: (messageId: string) => Promise<void>;
+  /** スマホ表示で会話一覧へ戻るためのボタン用(PC幅では表示しない)。 */
+  onBack: () => void;
 }
 
 function ChatImage({ path, getSignedImageUrl }: { path: string; getSignedImageUrl: (path: string) => Promise<string> }) {
@@ -156,17 +171,34 @@ export function ChatThread({
   getSignedImageUrl,
   onToggleReaction,
   onTogglePin,
+  revisionsByMessage,
+  onEditMessage,
+  onDeleteMessage,
+  onBack,
 }: ChatThreadProps) {
   const { locale, employeeName, t } = useLabelContext();
   const managerLabel = t('header.roleManager');
   const [text, setText] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendFailed, setSendFailed] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState('');
+  const [openHistoryId, setOpenHistoryId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  // 編集・取り消しボタンを24時間経過で消すため、現在時刻を1分ごとに更新する
+  const [now, setNow] = useState(() => Date.now());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'end' });
   }, [messages.length]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const memberIds = Array.from(memberIdsByConversation.get(conversation.id) ?? []);
   const title = getConversationDisplayName(
@@ -190,37 +222,99 @@ export function ChatThread({
     .filter((m) => m.pinnedAt)
     .sort((a, b) => (b.pinnedAt ?? '').localeCompare(a.pinnedAt ?? ''));
 
+  // 送信に成功してから入力欄を空にする(失敗時に書いた文章が消えないように)
   const handleSend = async () => {
     const trimmed = text.trim();
-    if (!trimmed) return;
-    setText('');
-    await onSendMessage(trimmed, null);
+    if (!trimmed || sending) return;
+    setSending(true);
+    setSendFailed(false);
+    try {
+      await onSendMessage(trimmed, null);
+      setText('');
+    } catch {
+      setSendFailed(true);
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setSendFailed(false);
     try {
       const path = await onUploadImage(file);
       await onSendMessage(null, path);
+    } catch {
+      setSendFailed(true);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
+  const runAction = async (action: () => Promise<void>) => {
+    setActionError(null);
+    try {
+      await action();
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String((err as { message?: string })?.message ?? err);
+      setActionError(t('chat.actionFailed', { message }));
+      return false;
+    }
+  };
+
+  const startEdit = (message: ChatMessage) => {
+    setEditingId(message.id);
+    setEditDraft(message.body ?? '');
+  };
+
+  const saveEdit = async (messageId: string) => {
+    if (!editDraft.trim()) return;
+    if (await runAction(() => onEditMessage(messageId, editDraft))) setEditingId(null);
+  };
+
+  const handleDelete = async (messageId: string) => {
+    if (!window.confirm(t('chat.confirmDelete'))) return;
+    await runAction(() => onDeleteMessage(messageId));
+  };
+
+  const canModify = (message: ChatMessage) =>
+    isParticipant &&
+    message.senderProfileId === myProfileId &&
+    !message.deletedAt &&
+    now - new Date(message.createdAt).getTime() < CHAT_EDIT_WINDOW_MS;
+
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString(locale === 'en' ? 'en-US' : 'ja-JP', { hour: '2-digit', minute: '2-digit' });
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-paper/10 px-4 py-3">
-        <h3 className="font-mincho text-sm font-bold text-paper">{title}</h3>
-        {conversation.type !== 'broadcast' && (
-          <p className="mt-0.5 text-[10px] text-paper-dim">{t('chat.managerVisibilityNotice')}</p>
-        )}
+      <div className="flex items-start gap-2 border-b border-paper/10 px-4 py-3">
+        <button
+          type="button"
+          onClick={onBack}
+          title={t('chat.back')}
+          aria-label={t('chat.back')}
+          className="-ml-1 mt-0.5 text-paper-dim transition hover:text-gold md:hidden"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <div className="min-w-0">
+          <h3 className="truncate font-mincho text-sm font-bold text-paper">{title}</h3>
+          {conversation.type !== 'broadcast' && (
+            <p className="mt-0.5 text-[10px] text-paper-dim">{t('chat.managerVisibilityNotice')}</p>
+          )}
+        </div>
       </div>
+
+      {actionError && (
+        <p className="mx-4 mt-3 rounded-lg border border-seal/40 bg-seal/10 px-3 py-2 text-xs text-seal-bright">
+          {actionError}
+        </p>
+      )}
 
       {!isParticipant && (
         <div className="mx-4 mt-3 flex items-center gap-2 rounded-lg border border-paper/20 bg-void/40 px-3 py-2 text-xs text-paper-dim">
@@ -272,6 +366,12 @@ export function ChatThread({
         {messages.map((message) => {
           const sender = resolveChatPerson(message.senderProfileId, directory, employeeMap, employeeName, managerLabel);
           const isPinned = !!message.pinnedAt;
+          const isDeleted = !!message.deletedAt;
+          const isEditing = editingId === message.id;
+          const messageRevisions = revisionsByMessage.get(message.id) ?? [];
+          const deleteRevision = messageRevisions.find((r) => r.kind === 'delete');
+          const editRevisions = messageRevisions.filter((r) => r.kind === 'edit');
+          const modifiable = canModify(message);
           return (
             <div key={message.id} className="flex items-start gap-2">
               <ChatPersonAvatar employee={sender.employee} size="sm" />
@@ -284,7 +384,21 @@ export function ChatThread({
                     </span>
                   )}
                   <span className="text-[10px] text-paper-dim">{formatTime(message.createdAt)}</span>
-                  {canPin && (
+                  {message.editedAt && !isDeleted && (
+                    isManager && editRevisions.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setOpenHistoryId(openHistoryId === message.id ? null : message.id)}
+                        title={t('chat.editHistory')}
+                        className="text-[10px] text-paper-dim underline decoration-dotted transition hover:text-gold"
+                      >
+                        ({t('chat.edited')})
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-paper-dim">({t('chat.edited')})</span>
+                    )
+                  )}
+                  {canPin && !isDeleted && (
                     <button
                       type="button"
                       onClick={() => onTogglePin(message.id, !isPinned)}
@@ -294,18 +408,107 @@ export function ChatThread({
                       <Pin size={11} />
                     </button>
                   )}
+                  {modifiable && !isEditing && message.body && (
+                    <button
+                      type="button"
+                      onClick={() => startEdit(message)}
+                      title={t('chat.editMessage')}
+                      aria-label={t('chat.editMessage')}
+                      className="self-center text-paper-dim transition hover:text-gold"
+                    >
+                      <Pencil size={11} />
+                    </button>
+                  )}
+                  {modifiable && !isEditing && (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(message.id)}
+                      title={t('chat.deleteMessage')}
+                      aria-label={t('chat.deleteMessage')}
+                      className="self-center text-paper-dim transition hover:text-seal-bright"
+                    >
+                      <Undo2 size={11} />
+                    </button>
+                  )}
                 </div>
-                {message.body && <p className="mt-0.5 whitespace-pre-wrap text-sm text-paper">{message.body}</p>}
-                {message.imagePath && <ChatImage path={message.imagePath} getSignedImageUrl={getSignedImageUrl} />}
-                <ReactionBar
-                  messageId={message.id}
-                  reactions={reactionsByMessage.get(message.id) ?? []}
-                  directory={directory}
-                  employeeMap={employeeMap}
-                  myProfileId={myProfileId}
-                  canReact={canReact}
-                  onToggle={onToggleReaction}
-                />
+
+                {isDeleted && (
+                  <>
+                    <p className="mt-0.5 text-sm italic text-paper-dim">{t('chat.deletedMessage')}</p>
+                    {isManager && deleteRevision && (
+                      <div className="mt-1 rounded-md border border-dashed border-paper/20 bg-void/40 px-2.5 py-1.5">
+                        <p className="text-[10px] text-paper-dim">{t('chat.deletedOriginalLabel')}</p>
+                        {deleteRevision.previousBody && (
+                          <p className="mt-0.5 whitespace-pre-wrap text-xs text-paper/80">{deleteRevision.previousBody}</p>
+                        )}
+                        {deleteRevision.previousImagePath && (
+                          <ChatImage path={deleteRevision.previousImagePath} getSignedImageUrl={getSignedImageUrl} />
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {!isDeleted && isEditing && (
+                  <div className="mt-1">
+                    <textarea
+                      value={editDraft}
+                      onChange={(e) => setEditDraft(e.target.value)}
+                      rows={2}
+                      className="w-full resize-y rounded-md border border-paper/20 bg-void px-2.5 py-1.5 text-sm text-paper focus:border-gold focus:outline-none"
+                    />
+                    <div className="mt-1 flex justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        className="rounded-full border border-paper/20 px-2.5 py-1 text-[11px] text-paper-dim transition hover:text-paper"
+                      >
+                        {t('common.cancel')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => saveEdit(message.id)}
+                        disabled={!editDraft.trim()}
+                        className="rounded-full bg-gold/20 px-2.5 py-1 text-[11px] font-medium text-gold transition disabled:opacity-40"
+                      >
+                        {t('common.save')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {!isDeleted && !isEditing && message.body && (
+                  <p className="mt-0.5 whitespace-pre-wrap text-sm text-paper">{message.body}</p>
+                )}
+                {!isDeleted && message.imagePath && (
+                  <ChatImage path={message.imagePath} getSignedImageUrl={getSignedImageUrl} />
+                )}
+
+                {isManager && openHistoryId === message.id && editRevisions.length > 0 && (
+                  <div className="mt-1 space-y-1 rounded-md border border-dashed border-paper/20 bg-void/40 px-2.5 py-1.5">
+                    <p className="text-[10px] text-paper-dim">{t('chat.editHistory')}</p>
+                    {editRevisions.map((revision) => (
+                      <div key={revision.id} className="text-xs">
+                        <span className="text-[10px] text-paper-dim">
+                          {t('chat.editHistoryItem', { time: formatTime(revision.createdAt) })}
+                        </span>
+                        <p className="whitespace-pre-wrap text-paper/80">{revision.previousBody}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {!isDeleted && (
+                  <ReactionBar
+                    messageId={message.id}
+                    reactions={reactionsByMessage.get(message.id) ?? []}
+                    directory={directory}
+                    employeeMap={employeeMap}
+                    myProfileId={myProfileId}
+                    canReact={canReact}
+                    onToggle={onToggleReaction}
+                  />
+                )}
               </div>
             </div>
           );
@@ -331,7 +534,8 @@ export function ChatThread({
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSend();
+                // 日本語入力の変換確定のEnterでは送信しない(keyCode 229はSafariでIME入力中を示す)
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) handleSend();
               }}
               placeholder={t('chat.messagePlaceholder')}
               className="flex-1 rounded-full border border-paper/20 bg-void px-3 py-1.5 text-sm text-paper placeholder:text-paper-dim/60 focus:border-gold focus:outline-none"
@@ -339,13 +543,14 @@ export function ChatThread({
             <button
               type="button"
               onClick={handleSend}
-              disabled={!text.trim()}
+              disabled={!text.trim() || sending}
               className="rounded-full bg-gold/20 px-3 py-1.5 text-xs font-medium text-gold transition disabled:opacity-40"
             >
               {t('chat.send')}
             </button>
           </div>
           {uploading && <p className="mt-1.5 text-[11px] text-paper-dim">{t('chat.uploading')}</p>}
+          {sendFailed && <p className="mt-1.5 text-[11px] text-seal-bright">{t('chat.sendFailed')}</p>}
         </div>
       )}
     </div>
