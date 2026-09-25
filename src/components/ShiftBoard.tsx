@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, History, Plus, Sparkles } from 'lucide-react';
 import { NinjaAvatar } from './NinjaAvatar';
 import { PostCoveragePanel } from './PostCoveragePanel';
@@ -8,7 +8,7 @@ import { PersonalSummaryTable } from './PersonalSummaryTable';
 import { FACILITY_COLOR, FACILITIES, capableFacilities, sortEmployeesByFacility } from '../data/facilities';
 import { WEEKDAYS } from '../data/constants';
 import { SHIFT_PATTERNS } from '../data/shiftPatterns';
-import { formatDateJp } from '../lib/format';
+import { formatDateJp, todayLocalIso } from '../lib/format';
 import { MOOD_COLOR } from '../lib/mood';
 import { readShiftDragPayload, setShiftDragPayload } from '../lib/dragDrop';
 import { facilityShortLabel, formatMonthLabel, translateReason, weekdayLabel } from '../lib/i18n';
@@ -97,6 +97,17 @@ export function ShiftBoard({
     setNotice(message);
     window.setTimeout(() => setNotice((n) => (n === message ? null : n)), 4000);
   };
+
+  // 開いた瞬間は月の1日から表示されており、今日の列が右の方に隠れて見えないことがあった。
+  // タブを開くたび(このコンポーネントは表示中のタブに応じてマウント/アンマウントされる)、
+  // 今日の列が横スクロールの中央に来るよう自動で合わせる。今月が対象期間外にクリップされて
+  // いる場合(defaultView参照)は今日の列自体が無いので何もしない。
+  useEffect(() => {
+    const today = todayLocalIso();
+    if (!dates.includes(today)) return;
+    columnRefs.current.get(today)?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSelectCoverageDate = (date: string) => {
     setHighlightDate(date);

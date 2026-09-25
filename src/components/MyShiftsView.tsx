@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowLeftRight, Bell, Check, ChevronLeft, ChevronRight, Copy, Users } from 'lucide-react';
 import { NinjaAvatar } from './NinjaAvatar';
 import { FACILITY_COLOR, FACILITY_ORDER, capableFacilities, sortEmployeesByFacility } from '../data/facilities';
@@ -57,6 +57,15 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
   const [selectedDate, setSelectedDate] = useState(() => todayOr(dates));
   const [lastSeenAt, setLastSeenAt] = useState<string | null>(() => loadLastSeenAt(employee.id));
   const [copiedCandidateId, setCopiedCandidateId] = useState<string | null>(null);
+  const rowRefs = useRef(new Map<string, HTMLTableRowElement>());
+
+  // 開いた瞬間は月初(1日)が一番上に表示されており、今日の行が下の方に隠れて見えないことが
+  // あった。タブを開くたび、今日の行(範囲外なら選択中の行)が縦スクロールの中央に来るよう
+  // 自動で合わせる(横スクロールのシフト表側と同じ考え方)。
+  useEffect(() => {
+    rowRefs.current.get(selectedDate)?.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'nearest' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 初回訪問(このブラウザにまだ既読情報がない場合)は、既存シフトを一括で「更新済み」扱いにしないよう、
   // 今の時刻を基準として保存するだけにとどめる(以降の変更だけを検知する)。
@@ -222,7 +231,14 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
             {dates.map((date) => {
               const isSelected = date === selectedDate;
               return (
-                <tr key={date} className={isSelected ? 'bg-gold/10' : 'odd:bg-void/30'}>
+                <tr
+                  key={date}
+                  ref={(el) => {
+                    if (el) rowRefs.current.set(date, el);
+                    else rowRefs.current.delete(date);
+                  }}
+                  className={isSelected ? 'bg-gold/10' : 'odd:bg-void/30'}
+                >
                   <td
                     className="sticky left-0 z-10 whitespace-nowrap border-b border-r border-paper/10 bg-void-soft px-2 py-1 text-paper-dim"
                     style={isSelected ? { background: 'rgba(182,146,79,0.12)' } : undefined}
