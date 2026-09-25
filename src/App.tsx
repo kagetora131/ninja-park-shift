@@ -28,6 +28,7 @@ import { FinanceEditModal, type FinanceDraft } from './components/FinanceEditMod
 import { useShiftStore } from './hooks/useShiftStore';
 import { useChatStore } from './hooks/useChatStore';
 import { useAuth } from './hooks/useAuth';
+import { useRememberedTab } from './hooks/useRememberedTab';
 import { LabelProvider, useLabelContext } from './hooks/LabelContext';
 import { useLocale } from './hooks/useLocale';
 import { t } from './lib/i18n';
@@ -80,7 +81,7 @@ function ManagerApp({ profile }: { profile: Profile }) {
   const chat = useChatStore(profile.id, true);
   const { t } = useLabelContext();
   const managerTabs = useManagerTabs(chat.totalUnreadCount);
-  const [activeTab, setActiveTab] = useState('board');
+  const [activeTab, setActiveTab] = useRememberedTab('ninja-park-shift:tab:manager', 'board', managerTabs.map((tb) => tb.id));
   const [shiftDraft, setShiftDraft] = useState<ShiftDraft | null>(null);
   const [employeeDraft, setEmployeeDraft] = useState<EmployeeDraft | null>(null);
   const [financeDraft, setFinanceDraft] = useState<FinanceDraft | null>(null);
@@ -195,7 +196,7 @@ function EmployeeApp({ profile }: { profile: Profile }) {
   const chat = useChatStore(profile.id, false);
   const { t } = useLabelContext();
   const employeeTabs = useEmployeeTabs(chat.totalUnreadCount);
-  const [activeTab, setActiveTab] = useState('myShifts');
+  const [activeTab, setActiveTab] = useRememberedTab('ninja-park-shift:tab:employee', 'myShifts', employeeTabs.map((tb) => tb.id));
   const employee = profile.employeeId ? employeeMap.get(profile.employeeId) : undefined;
 
   if (!employee) {

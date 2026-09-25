@@ -62,6 +62,13 @@ export function useAuth() {
   }, []);
 
   const signOut = useCallback(async () => {
+    // 次にログインする人が前の人の最後のタブから始まらないよう、覚えたタブを消す
+    try {
+      window.sessionStorage.removeItem('ninja-park-shift:tab:manager');
+      window.sessionStorage.removeItem('ninja-park-shift:tab:employee');
+    } catch {
+      // 消せない環境では何もしない
+    }
     await supabase.auth.signOut();
   }, []);
 
