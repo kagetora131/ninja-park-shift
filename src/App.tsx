@@ -77,7 +77,7 @@ function ManagerApp({ profile }: { profile: Profile }) {
     updateTraineeHourlyWage,
     updateFulltimeMonthlySalary,
     updatePostRequirement,
-  } = useShiftStore({ autoFillRecentShifts: true });
+  } = useShiftStore({ autoScheduleNextMonth: true });
   const chat = useChatStore(profile.id, true);
   const { t } = useLabelContext();
   const managerTabs = useManagerTabs(chat.totalUnreadCount);

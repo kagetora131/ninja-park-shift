@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { computeMoodMap } from '../lib/mood';
-import { dateRange, shiftDate, todayLocalIso, weekdayJp } from '../lib/format';
+import { dateRange, todayLocalIso, weekdayJp } from '../lib/format';
 import { computeDailyFinance } from '../lib/finance';
 import { autoAssignShifts } from '../lib/autoAssign';
 import {
@@ -79,11 +79,20 @@ const DEFAULT_WAGE_SETTINGS: WageSettings = {
  * どのテーブルもRLSで行が絞られるため、ロールに応じたフィルタリングはDB側に任せ、
  * ここでは「取得できたものをそのまま state にする」だけでよい。
  */
-/** 自動補完の対象期間(直近何日分)。長すぎると書き込み量が増え、短すぎると月次推移の見栄えが悪化する。 */
-const AUTO_FILL_WINDOW_DAYS = 60;
+/** この日(毎月25日)以降にログインすると、翌月分が未作成なら自動でシフトを組む。 */
+const AUTO_SCHEDULE_FROM_DAY_OF_MONTH = 25;
 
-export function useShiftStore(options?: { autoFillRecentShifts?: boolean }) {
-  const autoFillRecentShifts = options?.autoFillRecentShifts ?? false;
+/** `today` の翌月の初日・末日を返す(UTC基準、月またぎの年繰り上げも Date に任せる)。 */
+function nextMonthRange(today: string): { start: string; end: string } {
+  const [y, m] = today.split('-').map(Number);
+  const start = new Date(Date.UTC(y, m, 1));
+  const end = new Date(Date.UTC(y, m + 1, 0));
+  const toIso = (d: Date) => d.toISOString().slice(0, 10);
+  return { start: toIso(start), end: toIso(end) };
+}
+
+export function useShiftStore(options?: { autoScheduleNextMonth?: boolean }) {
+  const autoScheduleNextMonth = options?.autoScheduleNextMonth ?? false;
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [shifts, setShifts] = useState<ShiftEntry[]>([]);
@@ -218,30 +227,31 @@ export function useShiftStore(options?: { autoFillRecentShifts?: boolean }) {
   );
 
   /**
-   * マネージャーログイン時、直近 AUTO_FILL_WINDOW_DAYS 日のうちシフト実績が1件も無い日だけを
-   * 自動配置で埋める(既存データは一切変更しない)。日付をまたいで放置してもダミーデータが
-   * 古びて見えないようにするための仕組み(手動でのデータ追記に頼らない)。
-   * ページ読み込みごとに1回だけ実行する(既に埋まっている日は対象から外れるため、
-   * 再ログインしても重複書き込みは発生しない)。
+   * マネージャーログイン時、毎月 AUTO_SCHEDULE_FROM_DAY_OF_MONTH 日以降で翌月分のシフトが
+   * まだ1件も無ければ、実際のシフト作成業務と同じく「月末に来月分を組む」形で自動配置する
+   * (既存データは一切変更しない)。翌月分が既にあれば何もしない(重複作成の防止)。
    */
-  const hasAutoFilledRef = useRef(false);
+  const hasAutoScheduledRef = useRef(false);
   useEffect(() => {
-    if (!autoFillRecentShifts) return;
-    if (loading || hasAutoFilledRef.current) return;
+    if (!autoScheduleNextMonth) return;
+    if (loading || hasAutoScheduledRef.current) return;
     if (employees.length === 0 || Object.keys(postRequirements).length === 0) return;
-    hasAutoFilledRef.current = true;
 
     const today = todayLocalIso();
-    const windowDates = dateRange(shiftDate(today, -AUTO_FILL_WINDOW_DAYS), shiftDate(today, -1));
-    const datesWithShift = new Set(shifts.map((s) => s.date));
-    const missingDates = windowDates.filter((d) => !datesWithShift.has(d));
-    if (missingDates.length === 0) return;
+    const dayOfMonth = Number(today.slice(8, 10));
+    if (dayOfMonth < AUTO_SCHEDULE_FROM_DAY_OF_MONTH) return;
 
-    const { created } = autoAssignShifts(employees, shifts, postRequirements, missingDates);
+    const { start, end } = nextMonthRange(today);
+    const targetDates = dateRange(start, end);
+    const datesWithShift = new Set(shifts.map((s) => s.date));
+    if (targetDates.some((d) => datesWithShift.has(d))) return;
+
+    hasAutoScheduledRef.current = true;
+    const { created } = autoAssignShifts(employees, shifts, postRequirements, targetDates);
     if (created.length > 0) {
       void bulkUpsertShifts(created);
     }
-  }, [autoFillRecentShifts, loading, employees, shifts, postRequirements, bulkUpsertShifts]);
+  }, [autoScheduleNextMonth, loading, employees, shifts, postRequirements, bulkUpsertShifts]);
 
   const upsertEmployee = useCallback(
     async (input: EmployeeInput) => {
