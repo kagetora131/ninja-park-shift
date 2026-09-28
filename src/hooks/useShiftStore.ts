@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { computeMoodMap } from '../lib/mood';
-import { weekdayJp } from '../lib/format';
+import { dateRange, shiftDate, todayLocalIso, weekdayJp } from '../lib/format';
 import { computeDailyFinance } from '../lib/finance';
+import { autoAssignShifts } from '../lib/autoAssign';
 import {
   mapEmployeeRow,
   mapFinanceRevenueRow,
@@ -78,7 +79,11 @@ const DEFAULT_WAGE_SETTINGS: WageSettings = {
  * どのテーブルもRLSで行が絞られるため、ロールに応じたフィルタリングはDB側に任せ、
  * ここでは「取得できたものをそのまま state にする」だけでよい。
  */
-export function useShiftStore() {
+/** 自動補完の対象期間(直近何日分)。長すぎると書き込み量が増え、短すぎると月次推移の見栄えが悪化する。 */
+const AUTO_FILL_WINDOW_DAYS = 60;
+
+export function useShiftStore(options?: { autoFillRecentShifts?: boolean }) {
+  const autoFillRecentShifts = options?.autoFillRecentShifts ?? false;
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [shifts, setShifts] = useState<ShiftEntry[]>([]);
@@ -211,6 +216,32 @@ export function useShiftStore() {
     },
     [refetchShifts],
   );
+
+  /**
+   * マネージャーログイン時、直近 AUTO_FILL_WINDOW_DAYS 日のうちシフト実績が1件も無い日だけを
+   * 自動配置で埋める(既存データは一切変更しない)。日付をまたいで放置してもダミーデータが
+   * 古びて見えないようにするための仕組み(手動でのデータ追記に頼らない)。
+   * ページ読み込みごとに1回だけ実行する(既に埋まっている日は対象から外れるため、
+   * 再ログインしても重複書き込みは発生しない)。
+   */
+  const hasAutoFilledRef = useRef(false);
+  useEffect(() => {
+    if (!autoFillRecentShifts) return;
+    if (loading || hasAutoFilledRef.current) return;
+    if (employees.length === 0 || Object.keys(postRequirements).length === 0) return;
+    hasAutoFilledRef.current = true;
+
+    const today = todayLocalIso();
+    const windowDates = dateRange(shiftDate(today, -AUTO_FILL_WINDOW_DAYS), shiftDate(today, -1));
+    const datesWithShift = new Set(shifts.map((s) => s.date));
+    const missingDates = windowDates.filter((d) => !datesWithShift.has(d));
+    if (missingDates.length === 0) return;
+
+    const { created } = autoAssignShifts(employees, shifts, postRequirements, missingDates);
+    if (created.length > 0) {
+      void bulkUpsertShifts(created);
+    }
+  }, [autoFillRecentShifts, loading, employees, shifts, postRequirements, bulkUpsertShifts]);
 
   const upsertEmployee = useCallback(
     async (input: EmployeeInput) => {
