@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
+import { runDemoLoginFromUrl } from '../lib/demoLogin';
 import { supabase } from '../lib/supabaseClient';
 import type { Profile, UserRole } from '../types';
 
@@ -32,6 +33,8 @@ export function useAuth() {
     let active = true;
 
     async function init() {
+      // ?demo=... 付きで開かれたときは、ログインが終わってからセッションを読む
+      await runDemoLoginFromUrl();
       const {
         data: { session },
       } = await supabase.auth.getSession();

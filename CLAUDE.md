@@ -142,6 +142,10 @@ Codexによるレビュー提案をもとに、優先度の高い項目から着
 - **Realtime**: このアプリで初めてSupabase Realtimeを導入(`chat_messages`/`chat_message_reactions`を`supabase_realtime`publicationに追加)。クライアントは会話ごとではなく1本のグローバル購読(`useChatStore.ts`)。
 - **既知のハマりどころ(2026-09-19)**: Storageポリシーのサブクエリで`storage.foldername(name)`と書くと、`chat_conversations`にも`name`列があるため意図せず会話名(グループ名等)を指してしまい、常にRLS拒否になる。`storage.foldername(objects.name)`のように外側テーブルを明示的に修飾すること(`0013_fix_chat_storage_policy_column_shadowing.sql`)。
 
+## デモログインのURL自動ログイン(2026-10-02追加)
+
+ログイン画面自体は通常のメール+パスワードのまま(一度ワンタップ画面にしたが、ホームページ側のボタンで行う方針に変更して元に戻した)。ホームページのアプリカードから`?demo=manager`または`?demo=emp001`〜`emp010`付きで開くと、`src/lib/demoLogin.ts`が共通デモパスワード(公開サイトにも掲載済みの値)でログインし、パラメータをURLから消す。ログイン済みでも指定アカウントに切り替わる。ボタン側は`Homepage/src/content/demoLogins.ts`。
+
 ## 未確定事項（要確認）
 
 - 対象プラットフォーム（Webアプリ／スマホネイティブアプリのどちらを優先するか）
