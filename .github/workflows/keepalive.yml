@@ -1,0 +1,25 @@
+name: Supabase keepalive
+
+# Supabaseの無料プロジェクトは7日間アクセスが無いと自動停止されるため、
+# 3日おきにREST APIへ軽いリクエストを送って「アクティブ」状態を維持する。
+# (ninja-training-log の同名ワークフローと同じ方式)
+
+on:
+  schedule:
+    - cron: '23 15 */3 * *' # 3日おき 15:23 UTC (= 00:23 JST)
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Keep project active
+        env:
+          SUPABASE_URL: https://evervzhazhknkbwjjdbz.supabase.co
+          # publishable key はブラウザに公開される前提の公開鍵(RLSで保護)。ハードコードで問題ない。
+          ANON_KEY: sb_publishable_yVswz3a7GMALfiHZwTyu6Q_iEWKpi5E
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /dev/null -w '%{http_code}'             "$SUPABASE_URL/rest/v1/employees?select=id&limit=1"             -H "apikey: $ANON_KEY")
+          echo "keepalive ping -> HTTP $code"
+          test "$code" = "200"
