@@ -1,8 +1,8 @@
 name: Supabase keepalive
 
-# Supabaseの無料プロジェクトは7日間アクセスが無いと自動停止されるため、
-# 3日おきにREST APIへ軽いリクエストを送って「アクティブ」状態を維持する。
-# (ninja-training-log の同名ワークフローと同じ方式)
+# Supabaseの無料プロジェクトは7日間「利用」が無いと自動停止される(2026-10-16に実際に停止した)。
+# 公開キーでの読み取りだけでは利用と数えられなかった疑いがあるため、デモアカウントでログイン(認証API)し、
+# そのトークンでDBを読む(ログイン+認証つきクエリ)ところまで行う。3日おきに実行する。
 
 on:
   schedule:
@@ -16,10 +16,20 @@ jobs:
       - name: Keep project active
         env:
           SUPABASE_URL: https://evervzhazhknkbwjjdbz.supabase.co
-          # publishable key はブラウザに公開される前提の公開鍵(RLSで保護)。ハードコードで問題ない。
+          # publishable key はブラウザに公開される前提の公開鍵(RLSで保護)。
           ANON_KEY: sb_publishable_yVswz3a7GMALfiHZwTyu6Q_iEWKpi5E
+          # 公開サイト(app-list.md)にも掲載している共通デモアカウント。
+          DEMO_EMAIL: emp001@ninja-park-shift.demo
+          DEMO_PASSWORD: NinjaDemo2026
         run: |
           set -euo pipefail
-          code=$(curl -sS -o /dev/null -w '%{http_code}'             "$SUPABASE_URL/rest/v1/employees?select=id&limit=1"             -H "apikey: $ANON_KEY")
-          echo "keepalive ping -> HTTP $code"
+          login=$(curl -sS -w '\n%{http_code}' -X POST             "$SUPABASE_URL/auth/v1/token?grant_type=password"             -H "apikey: $ANON_KEY" -H "Content-Type: application/json"             -d "{\"email\":\"$DEMO_EMAIL\",\"password\":\"$DEMO_PASSWORD\"}")
+          code=$(echo "$login" | tail -n1)
+          echo "login -> HTTP $code"
           test "$code" = "200"
+          token=$(echo "$login" | sed '$d' | sed -E 's/.*"access_token":"([^"]+)".*/\1/')
+          for table in employees shifts; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}'               "$SUPABASE_URL/rest/v1/$table?select=id&limit=1"               -H "apikey: $ANON_KEY" -H "Authorization: Bearer $token")
+            echo "query $table -> HTTP $code"
+            test "$code" = "200"
+          done
