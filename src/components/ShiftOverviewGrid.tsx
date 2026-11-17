@@ -1,6 +1,8 @@
+import { useEffect, useRef } from 'react';
 import { FACILITY_COLOR, sortEmployeesByFacility } from '../data/facilities';
 import { NinjaAvatar } from './NinjaAvatar';
 import { computeCoverageRows, summarizeCoverageByDate } from '../lib/postCoverage';
+import { todayLocalIso } from '../lib/format';
 import { useLabelContext } from '../hooks/LabelContext';
 import type { ShiftDraft } from './ShiftEditModal';
 import type { Employee, PostRequirements, ShiftEntry } from '../types';
@@ -25,12 +27,24 @@ export function ShiftOverviewGrid({
 }: ShiftOverviewGridProps) {
   const { employeeName, facilityName, t } = useLabelContext();
   const sortedEmployees = sortEmployeesByFacility(employees);
+  const columnRefs = useRef(new Map<string, HTMLTableCellElement>());
 
   const shiftByKey = new Map<string, ShiftEntry>();
   for (const s of shifts) shiftByKey.set(`${s.date}_${s.employeeId}`, s);
 
-  const coverageRows = computeCoverageRows(dates, shifts, postRequirements);
+  // この月のシフトが1件も無いときは、全日が「不足」の赤になってしまうので、充足の判定をしない
+  const dateSet = new Set(dates);
+  const monthHasShifts = shifts.some((s) => dateSet.has(s.date));
+  const coverageRows = monthHasShifts ? computeCoverageRows(dates, shifts, postRequirements) : [];
   const dateSummary = summarizeCoverageByDate(coverageRows);
+
+  // 開いたとき、今日の列が横スクロールの中央に来るように合わせる(今月が対象外なら何もしない)
+  useEffect(() => {
+    const today = todayLocalIso();
+    if (!dates.includes(today)) return;
+    columnRefs.current.get(today)?.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="space-y-2">
@@ -38,7 +52,7 @@ export function ShiftOverviewGrid({
         <table className="border-collapse text-xs">
           <thead>
             <tr>
-              <th className="sticky left-0 top-0 z-30 min-w-[160px] border-b border-r border-paper/10 bg-void-soft px-2 py-2 text-left font-medium text-paper-dim">
+              <th className="sticky left-0 top-0 z-30 min-w-[96px] border-b border-r border-paper/10 bg-void-soft px-2 py-2 text-left font-medium text-paper-dim sm:min-w-[160px]">
                 {t('shiftBoard.staffHeader')}
               </th>
               {dates.map((date) => {
@@ -46,7 +60,11 @@ export function ShiftOverviewGrid({
                 return (
                   <th
                     key={date}
-                    className="sticky top-0 z-20 min-w-[30px] border-b border-r border-paper/10 bg-void-soft px-0.5 py-2 text-center font-medium text-paper-dim"
+                    ref={(el) => {
+                      if (el) columnRefs.current.set(date, el);
+                      else columnRefs.current.delete(date);
+                    }}
+                    className="sticky top-0 z-20 min-w-[44px] border-b border-r border-paper/10 bg-void-soft px-0.5 py-2 text-center font-medium text-paper-dim sm:min-w-[30px]"
                   >
                     <span
                       className={`mx-auto mb-1 block h-1.5 w-1.5 rounded-full ${
@@ -66,7 +84,12 @@ export function ShiftOverviewGrid({
                   className="sticky left-0 z-10 border-b border-r border-paper/10 bg-void-soft px-2 py-1.5"
                   style={{ borderLeft: `3px solid ${FACILITY_COLOR[emp.mainFacility]}` }}
                 >
-                  <div className="flex items-center gap-2">
+                  {/* スマホ: 顔+名前を縦に並べた細い列。PC: 今までどおり横並び */}
+                  <div className="flex flex-col items-center gap-0.5 sm:hidden">
+                    <NinjaAvatar employee={emp} mood="neutral" size="xs" />
+                    <span className="max-w-[80px] truncate text-xs text-paper">{employeeName(emp)}</span>
+                  </div>
+                  <div className="hidden items-center gap-2 sm:flex">
                     <NinjaAvatar employee={emp} mood="neutral" size="sm" />
                     <span className="truncate text-xs text-paper">{employeeName(emp)}</span>
                   </div>
@@ -77,6 +100,7 @@ export function ShiftOverviewGrid({
                     <td key={date} className="border-b border-r border-paper/5 p-0.5">
                       <button
                         type="button"
+                        data-compact
                         onClick={() =>
                           shift
                             ? onEditShift(shift)
@@ -87,10 +111,10 @@ export function ShiftOverviewGrid({
                             ? t('overview.workingTitle', { facility: facilityName(shift.facility), start: shift.start, end: shift.end })
                             : t('overview.offTitle')
                         }
-                        className="flex h-6 w-full items-center justify-center rounded-sm transition hover:brightness-125"
+                        className="flex h-10 w-full items-center justify-center rounded-sm transition hover:brightness-125 sm:h-6"
                       >
                         <span
-                          className="h-3.5 w-3.5 rounded-sm border border-dashed border-paper/10"
+                          className="h-5 w-5 rounded-sm border border-dashed border-paper/10 sm:h-3.5 sm:w-3.5"
                           style={shift ? { background: FACILITY_COLOR[shift.facility], border: 'none' } : undefined}
                         />
                       </button>
@@ -102,7 +126,7 @@ export function ShiftOverviewGrid({
           </tbody>
         </table>
       </div>
-      <p className="text-[11px] text-paper-dim">{t('overview.legend')}</p>
+      <p className="text-xs text-paper-dim sm:text-[11px]">{t('overview.legend')}</p>
     </div>
   );
 }

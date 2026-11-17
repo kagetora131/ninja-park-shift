@@ -11,6 +11,8 @@ interface PostCoveragePanelProps {
   shifts: ShiftEntry[];
   postRequirements: PostRequirements;
   onSelectDate: (date: string) => void;
+  /** 下から出る窓の中では、窓の題名と二重になるので見出しを出さない */
+  hideHeading?: boolean;
 }
 
 function rowKey(row: Pick<CoverageRow, 'date' | 'facility'>): string {
@@ -27,13 +29,22 @@ function currentWeekRange(): { start: string; end: string } {
 
 type ScopeFilter = 'today' | 'week' | 'all';
 
-export function PostCoveragePanel({ dates, shifts, postRequirements, onSelectDate }: PostCoveragePanelProps) {
+export function PostCoveragePanel({ dates, shifts, postRequirements, onSelectDate, hideHeading }: PostCoveragePanelProps) {
   const { locale, facilityName, t } = useLabelContext();
   const [scope, setScope] = useState<ScopeFilter>('all');
   const [unresolvedOnly, setUnresolvedOnly] = useState(true);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
-  const allRows = useMemo(() => computeCoverageRows(dates, shifts, postRequirements), [dates, shifts, postRequirements]);
+  // この月のシフトが1件も無いときは、全日が「不足」「不在」の赤になってしまうので、警告を作らず案内を出す
+  const monthHasShifts = useMemo(() => {
+    const dateSet = new Set(dates);
+    return shifts.some((s) => dateSet.has(s.date));
+  }, [dates, shifts]);
+
+  const allRows = useMemo(
+    () => (monthHasShifts ? computeCoverageRows(dates, shifts, postRequirements) : []),
+    [monthHasShifts, dates, shifts, postRequirements],
+  );
 
   const today = useMemo(() => todayLocalIso(), []);
   const week = useMemo(() => currentWeekRange(), []);
@@ -86,10 +97,10 @@ export function PostCoveragePanel({ dates, shifts, postRequirements, onSelectDat
 
   return (
     <div className="flex w-full shrink-0 flex-col rounded-xl border border-paper/10 bg-void-soft/50 p-3 lg:w-80">
-      <h3 className="font-mincho text-sm font-bold text-paper">{t('coverage.heading')}</h3>
-      <p className="mt-1 text-[11px] text-paper-dim">{t('coverage.description')}</p>
+      {!hideHeading && <h3 className="font-mincho text-sm font-bold text-paper">{t('coverage.heading')}</h3>}
+      <p className="mt-1 text-xs sm:text-[11px] text-paper-dim">{t('coverage.description')}</p>
 
-      <div className="mt-2 flex items-center gap-1 rounded-full border border-paper/15 bg-void/40 p-0.5 text-[11px]">
+      <div className="mt-2 flex items-center gap-1 rounded-full border border-paper/15 bg-void/40 p-0.5 text-xs sm:text-[11px]">
         {SCOPE_OPTIONS.map((opt) => (
           <button
             key={opt.id}
@@ -104,7 +115,7 @@ export function PostCoveragePanel({ dates, shifts, postRequirements, onSelectDat
         ))}
       </div>
 
-      <label className="mt-2 flex items-center gap-1.5 text-[11px] text-paper-dim">
+      <label className="mt-2 flex items-center gap-1.5 text-xs sm:text-[11px] text-paper-dim">
         <input
           type="checkbox"
           checked={unresolvedOnly}
@@ -117,7 +128,7 @@ export function PostCoveragePanel({ dates, shifts, postRequirements, onSelectDat
         )}
       </label>
 
-      <div className="mt-2 flex flex-wrap gap-1.5 text-[10px]">
+      <div className="mt-2 flex flex-wrap gap-1.5 text-xs sm:text-[10px]">
         <span className="rounded-full border border-seal/60 bg-seal/10 px-2 py-0.5 text-seal-bright">
           {t('coverage.empty')} {emptyCount}
         </span>
@@ -130,14 +141,18 @@ export function PostCoveragePanel({ dates, shifts, postRequirements, onSelectDat
       </div>
 
       <div className="mt-3 max-h-[60vh] space-y-3 overflow-y-auto pr-1 lg:max-h-[calc(100vh-22rem)]">
-        {groups.length === 0 ? (
+        {!monthHasShifts ? (
+          <p className="rounded-lg border border-dashed border-paper/15 px-3 py-6 text-center text-xs text-paper-dim/70">
+            {t('coverage.noShiftsThisMonth')}
+          </p>
+        ) : groups.length === 0 ? (
           <p className="rounded-lg border border-dashed border-paper/15 py-6 text-center text-xs text-paper-dim/70">
             {t('coverage.allGood')}
           </p>
         ) : (
           groups.map(([date, rowsForDate]) => (
             <div key={date}>
-              <p className="mb-1 px-0.5 text-[10px] font-medium uppercase tracking-wide text-paper-dim/70">
+              <p className="mb-1 px-0.5 text-xs sm:text-[10px] font-medium uppercase tracking-wide text-paper-dim/70">
                 {formatDateJp(date, locale)}
               </p>
               <div className="space-y-1.5">
@@ -147,7 +162,7 @@ export function PostCoveragePanel({ dates, shifts, postRequirements, onSelectDat
                   return (
                     <div
                       key={rowKey(row)}
-                      className={`flex w-full items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-left text-[11px] transition ${className} ${
+                      className={`flex w-full items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-left text-xs sm:text-[11px] transition ${className} ${
                         isDismissed ? 'opacity-40' : ''
                       }`}
                     >

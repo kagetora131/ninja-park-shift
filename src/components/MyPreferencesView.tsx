@@ -125,7 +125,7 @@ export function MyPreferencesView({ employee, onSaved }: MyPreferencesViewProps)
 
         <div className="rounded-xl border border-paper/10 bg-void-soft/50 p-4">
           <label className="mb-1 block text-xs text-paper-dim">{t('prefs.offCalendarHeading')}</label>
-          <p className="mb-3 text-[11px] text-paper-dim">{t('prefs.offCalendarDescription')}</p>
+          <p className="mb-3 text-xs sm:text-[11px] text-paper-dim">{t('prefs.offCalendarDescription')}</p>
           <MonthCalendar
             year={calendarView.year}
             month={calendarView.month}
@@ -136,7 +136,7 @@ export function MyPreferencesView({ employee, onSaved }: MyPreferencesViewProps)
             onDayClick={toggleOffDate}
           />
           {desiredOffDates.length > 0 && (
-            <p className="mt-2 text-[11px] text-gold">
+            <p className="mt-2 text-xs sm:text-[11px] text-gold">
               {t('prefs.selectedDatesPrefix', { list: [...desiredOffDates].sort().join('、') })}
             </p>
           )}

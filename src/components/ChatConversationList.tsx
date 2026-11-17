@@ -37,7 +37,7 @@ export function ChatConversationList({
 
   return (
     <div>
-      {heading && <p className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wide text-paper-dim">{heading}</p>}
+      {heading && <p className="mb-1 px-1 text-xs sm:text-[10px] font-medium uppercase tracking-wide text-paper-dim">{heading}</p>}
       <div className="space-y-1">
         {sorted.map((conversation) => {
           const memberIds = Array.from(memberIdsByConversation.get(conversation.id) ?? []);
@@ -80,7 +80,7 @@ export function ChatConversationList({
               {conversation.type === 'dm' && <ChatPersonAvatar employee={otherPerson?.employee} size="sm" />}
               <span className="flex-1 truncate">{name}</span>
               {unread > 0 && (
-                <span className="rounded-full bg-seal-bright px-1.5 py-[1px] text-[10px] font-semibold text-void">
+                <span className="rounded-full bg-seal-bright px-1.5 py-[1px] text-xs sm:text-[10px] font-semibold text-void">
                   {unread > 9 ? '9+' : unread}
                 </span>
               )}

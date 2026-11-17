@@ -97,12 +97,12 @@ export function HealthScoreView({ employees, shifts, moodMap, onRemoveShift }: H
           <HeartPulse size={16} className="text-gold" />
           <h2 className="font-mincho text-sm font-bold text-paper">{t('health.heading')}</h2>
         </div>
-        <p className="mb-4 text-[11px] text-paper-dim">{t('health.description')}</p>
+        <p className="mb-4 text-xs sm:text-[11px] text-paper-dim">{t('health.description')}</p>
 
         <div className="flex flex-wrap items-center gap-4">
           <div className={`rounded-xl border px-5 py-3 text-center ${LABEL_STYLE[teamLabel]}`}>
             <p className="font-mincho text-3xl font-bold">{teamScore ?? '–'}</p>
-            <p className="text-[11px]">{t(`health.label${teamLabel === 'good' ? 'Good' : teamLabel === 'ok' ? 'Ok' : 'Warning'}`)}</p>
+            <p className="text-xs sm:text-[11px]">{t(`health.label${teamLabel === 'good' ? 'Good' : teamLabel === 'ok' ? 'Ok' : 'Warning'}`)}</p>
           </div>
           <p className="text-xs text-paper-dim">
             {t('health.shiftBreakdown', {
@@ -118,10 +118,14 @@ export function HealthScoreView({ employees, shifts, moodMap, onRemoveShift }: H
 
       <div className="rounded-xl border border-paper/10 bg-void-soft/50 p-4">
         <h3 className="font-mincho text-sm font-bold text-paper">{t('health.atRiskHeading')}</h3>
-        <p className="mt-1 text-[11px] text-paper-dim">{t('health.atRiskDescription')}</p>
+        <p className="mt-1 text-xs sm:text-[11px] text-paper-dim">{t('health.atRiskDescription')}</p>
 
         <div className="mt-3 space-y-2">
-          {atRisk.length === 0 ? (
+          {monthShifts.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-paper/15 px-3 py-6 text-center text-xs text-paper-dim/70">
+              {t('health.noShiftsMonth')}
+            </p>
+          ) : atRisk.length === 0 ? (
             <p className="rounded-lg border border-dashed border-paper/15 py-6 text-center text-xs text-paper-dim/70">
               {t('health.allGood')}
             </p>
@@ -137,7 +141,7 @@ export function HealthScoreView({ employees, shifts, moodMap, onRemoveShift }: H
                   <NinjaAvatar employee={employee} mood={worstMood(counts)} size="sm" />
                   <div>
                     <p className="text-xs font-medium text-paper">{employeeName(employee)}</p>
-                    <p className="text-[10px] text-paper-dim">
+                    <p className="text-xs sm:text-[10px] text-paper-dim">
                       {t('health.tiredCount', { n: counts.tired })} ・ {t('health.unhappyCount', { n: counts.unhappy })}
                     </p>
                   </div>

@@ -25,7 +25,7 @@ export function LoginPage({ onSignIn, error }: LoginPageProps) {
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-xl border border-gold/30 bg-void-soft p-6 shadow-2xl">
         <div className="mb-2 flex justify-end">
-          <div className="flex rounded-full border border-paper/20 p-0.5 text-[11px]">
+          <div className="flex rounded-full border border-paper/20 p-0.5 text-xs sm:text-[11px]">
             {(['ja', 'en'] as const).map((l) => (
               <button
                 key={l}
@@ -46,7 +46,7 @@ export function LoginPage({ onSignIn, error }: LoginPageProps) {
             <Swords size={22} />
           </div>
           <h1 className="font-mincho text-lg font-bold text-paper">{t('header.appName', locale)}</h1>
-          <p className="text-[11px] tracking-widest text-paper-dim">{t('login.heading', locale)}</p>
+          <p className="text-xs sm:text-[11px] tracking-widest text-paper-dim">{t('login.heading', locale)}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

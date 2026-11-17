@@ -26,9 +26,9 @@ export function AutoAssignPreviewModal({ result, employees, applying, onConfirm,
   const dates = [...grouped.keys()].sort();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onCancel}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center sm:p-4" onClick={onCancel}>
       <div
-        className="animate-rise flex max-h-[85vh] w-full max-w-2xl flex-col rounded-xl border border-gold/30 bg-void-soft p-5 shadow-2xl"
+        className="animate-rise flex max-h-[85vh] w-full max-w-2xl flex-col rounded-t-2xl border border-gold/30 max-sm:max-h-[90vh] sm:rounded-xl bg-void-soft p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
@@ -57,7 +57,7 @@ export function AutoAssignPreviewModal({ result, employees, applying, onConfirm,
           <div className="flex-1 space-y-3 overflow-y-auto pr-1">
             {dates.map((date) => (
               <div key={date}>
-                <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-paper-dim/70">
+                <p className="mb-1.5 text-xs sm:text-[11px] font-medium uppercase tracking-wide text-paper-dim/70">
                   {formatDateJp(date, locale)}
                 </p>
                 <div className="space-y-1.5">
@@ -87,7 +87,7 @@ export function AutoAssignPreviewModal({ result, employees, applying, onConfirm,
                         </div>
                         <div className="mt-1.5 flex flex-wrap gap-1">
                           <span
-                            className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] ${
+                            className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs sm:text-[10px] ${
                               c.isMainFacility ? 'bg-jade/15 text-jade' : 'bg-gold/15 text-gold'
                             }`}
                           >
@@ -95,17 +95,17 @@ export function AutoAssignPreviewModal({ result, employees, applying, onConfirm,
                             {c.isMainFacility ? t('autoAssign.homeFacility') : t('autoAssign.helpFacility')}
                           </span>
                           {c.isRequestedOffWeekday && (
-                            <span className="flex items-center gap-1 rounded-full bg-seal/15 px-2 py-0.5 text-[10px] text-seal-bright">
+                            <span className="flex items-center gap-1 rounded-full bg-seal/15 px-2 py-0.5 text-xs sm:text-[10px] text-seal-bright">
                               <AlertTriangle size={10} />
                               {t('autoAssign.forcedOffDay')}
                             </span>
                           )}
-                          <span className="flex items-center gap-1 rounded-full bg-paper/10 px-2 py-0.5 text-[10px] text-paper-dim">
+                          <span className="flex items-center gap-1 rounded-full bg-paper/10 px-2 py-0.5 text-xs sm:text-[10px] text-paper-dim">
                             <Repeat size={10} />
                             {t('autoAssign.consecutiveDays', { n: c.consecutiveDaysAfter })}
                           </span>
                           {c.requiresQualification && (
-                            <span className="flex items-center gap-1 rounded-full bg-jade/15 px-2 py-0.5 text-[10px] text-jade">
+                            <span className="flex items-center gap-1 rounded-full bg-jade/15 px-2 py-0.5 text-xs sm:text-[10px] text-jade">
                               <Award size={10} />
                               {t('autoAssign.qualified')}
                             </span>

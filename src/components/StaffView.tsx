@@ -41,16 +41,16 @@ export function StaffView({ employees, onEdit, onCreate }: StaffViewProps) {
               <NinjaAvatar employee={employee} mood="happy" size="lg" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-paper">{employeeName(employee)}</p>
-                <p className="text-[11px] text-paper-dim">
+                <p className="text-xs sm:text-[11px] text-paper-dim">
                   {roleName(employee.role)}
                   {employee.isTrainee && <span className="ml-1 text-gold">{t('staff.traineeSuffix')}</span>}
                 </p>
-                <div className="mt-1.5 flex items-center gap-1 text-[11px] text-gold">
+                <div className="mt-1.5 flex items-center gap-1 text-xs sm:text-[11px] text-gold">
                   <MainIcon size={12} />
                   {facilityName(employee.mainFacility)}
                 </div>
                 {employee.crossTrained.length > 0 && (
-                  <p className="mt-1 text-[10px] text-paper-dim">
+                  <p className="mt-1 text-xs sm:text-[10px] text-paper-dim">
                     {t('staff.crossTrainedPrefix', {
                       list: employee.crossTrained
                         .map((f) => facilityShortLabel(f, FACILITIES[f].shortName, locale))
@@ -58,7 +58,7 @@ export function StaffView({ employees, onEdit, onCreate }: StaffViewProps) {
                     })}
                   </p>
                 )}
-                <p className="mt-1 text-[10px] text-paper-dim">
+                <p className="mt-1 text-xs sm:text-[10px] text-paper-dim">
                   {t('shiftBoard.desiredWorkAndMax', { days: employee.desiredWorkDaysPerWeek, max: employee.maxConsecutiveDays })}
                 </p>
               </div>

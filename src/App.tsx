@@ -31,6 +31,7 @@ import { useAuth } from './hooks/useAuth';
 import { useRememberedTab } from './hooks/useRememberedTab';
 import { LabelProvider, useLabelContext } from './hooks/LabelContext';
 import { useLocale } from './hooks/useLocale';
+import { CurrentUserProvider, useReportCurrentUserName } from './hooks/CurrentUserContext';
 import { t } from './lib/i18n';
 import type { Employee, Profile, ShiftEntry } from './types';
 import type { AutoAssignCandidate } from './lib/autoAssign';
@@ -38,26 +39,29 @@ import type { AutoAssignCandidate } from './lib/autoAssign';
 function useManagerTabs(chatBadgeCount: number): TabDef[] {
   const { t } = useLabelContext();
   return [
-    { id: 'board', label: t('tab.board'), icon: TableProperties },
-    { id: 'chat', label: t('tab.chat'), icon: MessageSquare, badgeCount: chatBadgeCount },
-    { id: 'staff', label: t('tab.staff'), icon: Users },
+    { id: 'board', label: t('tab.board'), shortLabel: t('tab.short.board'), icon: TableProperties },
+    { id: 'chat', label: t('tab.chat'), shortLabel: t('tab.short.chat'), icon: MessageSquare, badgeCount: chatBadgeCount },
+    { id: 'staff', label: t('tab.staff'), shortLabel: t('tab.short.staff'), icon: Users },
     { id: 'finance', label: t('tab.finance'), icon: Wallet },
     { id: 'posts', label: t('tab.posts'), icon: ClipboardList },
-    { id: 'health', label: t('tab.health'), icon: HeartPulse },
+    { id: 'health', label: t('tab.health'), shortLabel: t('tab.short.health'), icon: HeartPulse },
     { id: 'labels', label: t('tab.labels'), icon: Languages },
   ];
 }
 
+// スマホの下タブに並べるマネージャー用のタブ(残りの収支・給与とポスト設定・用語管理は「その他」の窓)
+const MANAGER_MOBILE_PRIMARY = ['board', 'chat', 'staff', 'health'];
+
 function useEmployeeTabs(chatBadgeCount: number): TabDef[] {
   const { t } = useLabelContext();
   return [
-    { id: 'myShifts', label: t('tab.myShifts'), icon: CalendarDays },
-    { id: 'chat', label: t('tab.chat'), icon: MessageSquare, badgeCount: chatBadgeCount },
-    { id: 'myPreferences', label: t('tab.myPreferences'), icon: UserCog },
+    { id: 'myShifts', label: t('tab.myShifts'), shortLabel: t('tab.short.myShifts'), icon: CalendarDays },
+    { id: 'chat', label: t('tab.chat'), shortLabel: t('tab.short.chat'), icon: MessageSquare, badgeCount: chatBadgeCount },
+    { id: 'myPreferences', label: t('tab.myPreferences'), shortLabel: t('tab.short.myPreferences'), icon: UserCog },
   ];
 }
 
-function ManagerApp({ profile }: { profile: Profile }) {
+function ManagerApp({ profile, email }: { profile: Profile; email: string | undefined }) {
   const {
     employees,
     employeeMap,
@@ -85,6 +89,8 @@ function ManagerApp({ profile }: { profile: Profile }) {
   const [shiftDraft, setShiftDraft] = useState<ShiftDraft | null>(null);
   const [employeeDraft, setEmployeeDraft] = useState<EmployeeDraft | null>(null);
   const [financeDraft, setFinanceDraft] = useState<FinanceDraft | null>(null);
+  // スマホのヘッダーに出す名前(マネージャーはメールアドレスの@より前)
+  useReportCurrentUserName(email ? email.split('@')[0] : null);
 
   const handleEditShift = (shift: ShiftEntry) => {
     setShiftDraft({ mode: 'edit', date: shift.date, facility: shift.facility, existingShift: shift });
@@ -119,7 +125,7 @@ function ManagerApp({ profile }: { profile: Profile }) {
 
   return (
     <>
-      <TabNav tabs={managerTabs} active={activeTab} onChange={setActiveTab} />
+      <TabNav tabs={managerTabs} active={activeTab} onChange={setActiveTab} mobilePrimaryIds={MANAGER_MOBILE_PRIMARY} />
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         {activeTab === 'board' && (
           <ShiftBoard
@@ -198,6 +204,9 @@ function EmployeeApp({ profile }: { profile: Profile }) {
   const employeeTabs = useEmployeeTabs(chat.totalUnreadCount);
   const [activeTab, setActiveTab] = useRememberedTab('ninja-park-shift:tab:employee', 'myShifts', employeeTabs.map((tb) => tb.id));
   const employee = profile.employeeId ? employeeMap.get(profile.employeeId) : undefined;
+  const { employeeName } = useLabelContext();
+  // スマホのヘッダーに出す名前(従業員は表記テーブルの名前)
+  useReportCurrentUserName(employee ? employeeName(employee) : null);
 
   if (!employee) {
     return (
@@ -276,10 +285,13 @@ function AppShell({ loading, isAuthenticated, email, profile, error, onSignIn, o
 
   return (
     <LabelProvider>
-      <div className="min-h-screen pb-16">
-        <Header role={profile.role} email={email} onSignOut={onSignOut} />
-        {profile.role === 'manager' ? <ManagerApp profile={profile} /> : <EmployeeApp profile={profile} />}
-      </div>
+      <CurrentUserProvider>
+        {/* スマホは下に固定のタブがあるので、その高さぶん本文の下を空ける */}
+        <div className="min-h-screen pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:pb-16">
+          <Header role={profile.role} email={email} onSignOut={onSignOut} />
+          {profile.role === 'manager' ? <ManagerApp profile={profile} email={email} /> : <EmployeeApp profile={profile} />}
+        </div>
+      </CurrentUserProvider>
     </LabelProvider>
   );
 }

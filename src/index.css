@@ -74,3 +74,27 @@ body {
 .animate-rise {
   animation: rise-fade 0.35s ease-out both;
 }
+
+/* スマホ幅(sm=640px未満)だけ、指で押しやすく・読みやすくする(2026-11-17)。PC幅の見た目は変えない。
+   - ボタン・選択欄・折りたたみの見出しは、押す範囲を44px以上にする
+   - 入力欄・選択欄の文字は16px以上にする(iPhoneで、入力時に画面が勝手に拡大されるのを防ぐ)
+   押す範囲を広げたくない小さな部品(シフト表のマスなど)には data-compact を付ける。
+   注意: Tailwindのクラス(text-xs など)に勝つため、あえてレイヤーの外に書いている。 */
+@media not all and (min-width: 40rem) {
+  button:not([data-compact]),
+  summary:not([data-compact]) {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+  select {
+    min-height: 2.75rem;
+  }
+  select,
+  textarea,
+  input:not([type='checkbox']):not([type='radio']):not([type='range']) {
+    font-size: 1rem;
+  }
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='hidden']):not([data-compact]) {
+    min-height: 2.75rem;
+  }
+}

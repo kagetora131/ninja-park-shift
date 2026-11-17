@@ -96,7 +96,7 @@ export function FinanceDashboard({ finance, onEditFacility }: FinanceDashboardPr
                     style={{ height: `${negativePct}%` }}
                   />
                 </div>
-                <span className="mt-1.5 text-[10px] text-paper-dim">{Number(day.date.slice(-2))}</span>
+                <span className="mt-1.5 text-xs sm:text-[10px] text-paper-dim">{Number(day.date.slice(-2))}</span>
               </button>
             );
           })}
@@ -110,7 +110,7 @@ export function FinanceDashboard({ finance, onEditFacility }: FinanceDashboardPr
               {t('finance.detailHeading', { date: formatDateJp(selected.date, locale) })}
             </h3>
             <span
-              className={`rounded-full px-2.5 py-1 text-[11px] ${
+              className={`rounded-full px-2.5 py-1 text-xs sm:text-[11px] ${
                 selected.isBlack ? 'bg-jade/15 text-jade' : 'bg-seal/15 text-seal-bright'
               }`}
             >
@@ -140,9 +140,9 @@ export function FinanceDashboard({ finance, onEditFacility }: FinanceDashboardPr
                       <Pencil size={12} />
                     </button>
                   </div>
-                  <p className="text-[11px] text-paper-dim">{t('finance.revenue')} {formatYen(f.revenue)}</p>
-                  <p className="text-[11px] text-paper-dim">{t('finance.laborAuto')} {formatYen(f.laborCost)}</p>
-                  <p className={`text-[11px] font-medium ${margin >= 0 ? 'text-jade' : 'text-seal-bright'}`}>
+                  <p className="text-xs sm:text-[11px] text-paper-dim">{t('finance.revenue')} {formatYen(f.revenue)}</p>
+                  <p className="text-xs sm:text-[11px] text-paper-dim">{t('finance.laborAuto')} {formatYen(f.laborCost)}</p>
+                  <p className={`text-xs sm:text-[11px] font-medium ${margin >= 0 ? 'text-jade' : 'text-seal-bright'}`}>
                     {t('finance.margin')} {formatYen(margin)}
                   </p>
                 </div>

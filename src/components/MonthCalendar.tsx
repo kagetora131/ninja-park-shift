@@ -84,7 +84,7 @@ export function MonthCalendar({
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-paper-dim">
+      <div className="grid grid-cols-7 gap-1 text-center text-xs sm:text-[10px] text-paper-dim">
         {WEEKDAY_HEADERS.map((w) => (
           <div key={w} className="py-1">
             {weekdayLabel(w, locale)}

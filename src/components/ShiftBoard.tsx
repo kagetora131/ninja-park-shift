@@ -4,6 +4,9 @@ import { NinjaAvatar } from './NinjaAvatar';
 import { PostCoveragePanel } from './PostCoveragePanel';
 import { AutoAssignPreviewModal } from './AutoAssignPreviewModal';
 import { ShiftOverviewGrid } from './ShiftOverviewGrid';
+import { BottomSheet } from './BottomSheet';
+import { StaffInfoSheet } from './StaffInfoSheet';
+import { FacilityLegend } from './FacilityLegend';
 import { PersonalSummaryTable } from './PersonalSummaryTable';
 import { FACILITY_COLOR, FACILITIES, capableFacilities, sortEmployeesByFacility } from '../data/facilities';
 import { WEEKDAYS } from '../data/constants';
@@ -13,6 +16,8 @@ import { MOOD_COLOR } from '../lib/mood';
 import { readShiftDragPayload, setShiftDragPayload } from '../lib/dragDrop';
 import { facilityShortLabel, formatMonthLabel, translateReason, weekdayLabel } from '../lib/i18n';
 import { autoAssignShifts } from '../lib/autoAssign';
+import { computeCoverageRows } from '../lib/postCoverage';
+import { isPhoneViewport } from '../lib/viewport';
 import { useAutoScrollOnDrag } from '../hooks/useAutoScrollOnDrag';
 import {
   CALENDAR_END_MONTH,
@@ -77,7 +82,10 @@ export function ShiftBoard({
   const [applying, setApplying] = useState(false);
   const [history, setHistory] = useState<AutoAssignHistoryEntry[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('edit');
+  // スマホは全体が見渡せる俯瞰モードから始める(編集モードは日付が2日分しか見えないため)
+  const [viewMode, setViewMode] = useState<ViewMode>(() => (isPhoneViewport() ? 'overview' : 'edit'));
+  const [coverageOpen, setCoverageOpen] = useState(false);
+  const [infoEmployee, setInfoEmployee] = useState<Employee | null>(null);
   const columnRefs = useRef(new Map<string, HTMLTableCellElement>());
 
   const dates = datesInMonth(view.year, view.month);
@@ -90,6 +98,16 @@ export function ShiftBoard({
 
   const financeByDate = new Map(finance.map((f) => [f.date, f]));
   const blackDaysInView = dates.filter((d) => financeByDate.get(d)?.isBlack).length;
+
+  // スマホの「ポスト充足状況」1行要約用(この月のシフトが1件も無いときは集計しない)
+  const dateSet = new Set(dates);
+  const monthHasShifts = shifts.some((s) => dateSet.has(s.date));
+  const coverageRows = monthHasShifts ? computeCoverageRows(dates, shifts, postRequirements) : [];
+  const coverageCounts = {
+    empty: coverageRows.filter((r) => r.status === 'empty').length,
+    short: coverageRows.filter((r) => r.status === 'understaffed').length,
+    over: coverageRows.filter((r) => r.status === 'overstaffed').length,
+  };
 
   const goMonth = (delta: number) => setView((v) => addMonths(v.year, v.month, delta));
 
@@ -228,7 +246,8 @@ export function ShiftBoard({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+        <div className="flex items-center justify-between gap-2 sm:justify-start">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -248,8 +267,12 @@ export function ShiftBoard({
             <ChevronRight size={16} />
           </button>
         </div>
-        <div className="relative flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 rounded-full border border-paper/15 bg-void/40 p-0.5 text-[11px]">
+        <div className="rounded-full border border-jade/40 bg-jade/10 px-3 py-1.5 text-xs text-jade sm:hidden">
+          {t('shiftBoard.blackDaysShort', { black: blackDaysInView, total: dates.length })}
+        </div>
+        </div>
+        <div className="relative flex items-center gap-2 sm:flex-wrap">
+          <div className="flex flex-1 items-center gap-1 rounded-full border border-paper/15 bg-void/40 p-0.5 text-xs sm:text-[11px] sm:flex-none">
             {(
               [
                 ['edit', t('viewMode.edit')],
@@ -261,7 +284,7 @@ export function ShiftBoard({
                 key={mode}
                 type="button"
                 onClick={() => setViewMode(mode)}
-                className={`rounded-full px-2.5 py-1 transition ${
+                className={`flex-1 rounded-full px-2.5 py-1 transition sm:flex-none ${
                   viewMode === mode ? 'bg-gold/20 text-gold' : 'text-paper-dim hover:text-paper'
                 }`}
               >
@@ -273,30 +296,34 @@ export function ShiftBoard({
             <button
               type="button"
               onClick={handleOpenAutoAssignPreview}
-              className="flex items-center gap-1.5 rounded-full border border-gold/50 px-3 py-1.5 text-xs text-gold transition hover:bg-gold/10"
+              aria-label={t('shiftBoard.autoAssign')}
+              title={t('shiftBoard.autoAssign')}
+              className="flex items-center justify-center gap-1.5 rounded-full border border-gold/50 px-3 py-1.5 text-xs text-gold transition hover:bg-gold/10"
             >
               <Sparkles size={13} />
-              {t('shiftBoard.autoAssign')}
+              <span className="hidden sm:inline">{t('shiftBoard.autoAssign')}</span>
             </button>
           )}
           {viewMode === 'edit' && history.length > 0 && (
             <button
               type="button"
               onClick={() => setHistoryOpen((v) => !v)}
-              className="flex items-center gap-1.5 rounded-full border border-paper/20 px-3 py-1.5 text-xs text-paper-dim transition hover:border-gold hover:text-gold"
+              aria-label={t('autoAssign.historyHeading')}
+              title={t('autoAssign.historyHeading')}
+              className="flex items-center justify-center gap-1.5 rounded-full border border-paper/20 px-3 py-1.5 text-xs text-paper-dim transition hover:border-gold hover:text-gold"
             >
               <History size={13} />
-              {t('autoAssign.historyHeading')}
+              <span className="hidden sm:inline">{t('autoAssign.historyHeading')}</span>
             </button>
           )}
           {viewMode === 'edit' && historyOpen && history.length > 0 && (
-            <div className="absolute right-0 top-full z-30 mt-2 w-72 rounded-xl border border-paper/15 bg-void-soft p-3 shadow-2xl">
+            <div className="absolute right-0 top-full z-30 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-xl sm:w-72 border border-paper/15 bg-void-soft p-3 shadow-2xl">
               <p className="mb-2 text-xs font-medium text-paper">{t('autoAssign.historyHeading')}</p>
               <div className="space-y-1.5">
                 {history.map((entry) => (
                   <div
                     key={entry.id}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-paper/10 bg-void/40 px-2.5 py-1.5 text-[11px]"
+                    className="flex items-center justify-between gap-2 rounded-lg border border-paper/10 bg-void/40 px-2.5 py-1.5 text-xs sm:text-[11px]"
                   >
                     <span className={entry.undone ? 'text-paper-dim/50 line-through' : 'text-paper-dim'}>
                       {t('autoAssign.historyEntry', {
@@ -320,7 +347,7 @@ export function ShiftBoard({
               </div>
             </div>
           )}
-          <div className="flex items-center gap-2 rounded-full border border-jade/40 bg-jade/10 px-3 py-1.5 text-xs text-jade">
+          <div className="hidden items-center gap-2 rounded-full border border-jade/40 bg-jade/10 px-3 py-1.5 text-xs text-jade sm:flex">
             {t('shiftBoard.blackDays', { black: blackDaysInView, total: dates.length })}
           </div>
         </div>
@@ -330,6 +357,26 @@ export function ShiftBoard({
         <div className="animate-rise rounded-lg border border-gold/50 bg-gold/10 px-4 py-2 text-xs text-gold">
           {notice}
         </div>
+      )}
+
+      {(viewMode === 'overview' || viewMode === 'edit') && <FacilityLegend />}
+
+      {viewMode === 'edit' && (
+        <button
+          type="button"
+          onClick={() => setCoverageOpen(true)}
+          aria-haspopup="dialog"
+          className="flex w-full items-center justify-between gap-2 rounded-xl border border-paper/15 bg-void-soft/50 px-3 text-left text-xs text-paper sm:hidden"
+        >
+          <span>
+            {!monthHasShifts
+              ? t('coverage.noShiftsThisMonth')
+              : coverageCounts.empty + coverageCounts.short + coverageCounts.over === 0
+                ? t('coverage.mobileSummaryOk')
+                : t('coverage.mobileSummary', coverageCounts)}
+          </span>
+          <ChevronRight size={16} className="shrink-0 text-paper-dim" />
+        </button>
       )}
 
       {viewMode === 'overview' && (
@@ -351,7 +398,7 @@ export function ShiftBoard({
           <table className="border-collapse text-xs">
             <thead>
               <tr>
-                <th className="sticky left-0 top-0 z-30 min-w-[210px] border-b border-r border-paper/10 bg-void-soft px-2 py-2 text-left font-medium text-paper-dim">
+                <th className="sticky left-0 top-0 z-30 min-w-[96px] border-b border-r border-paper/10 bg-void-soft px-2 py-2 text-left font-medium text-paper-dim sm:min-w-[210px]">
                   {t('shiftBoard.staffHeader')}
                 </th>
                 {dates.map((date) => {
@@ -387,17 +434,28 @@ export function ShiftBoard({
                       className="sticky left-0 z-10 border-b border-r border-paper/10 bg-void-soft p-2 align-top"
                       style={{ borderLeft: `3px solid ${FACILITY_COLOR[emp.mainFacility]}` }}
                     >
-                      <div className="flex items-center gap-2">
+                      {/* スマホ: 顔+名前だけの細い列。名前を押すと、希望・対応施設の窓が出る */}
+                      <button
+                        type="button"
+                        data-compact
+                        onClick={() => setInfoEmployee(emp)}
+                        aria-label={t('staffInfo.heading', { name: employeeName(emp) })}
+                        className="flex w-full flex-col items-center gap-0.5 text-center sm:hidden"
+                      >
+                        <NinjaAvatar employee={emp} mood="neutral" size="xs" />
+                        <span className="max-w-full truncate text-xs font-medium text-paper">{employeeName(emp)}</span>
+                      </button>
+                      <div className="hidden items-center gap-2 sm:flex">
                         <NinjaAvatar employee={emp} mood="neutral" size="sm" />
                         <div className="min-w-0">
                           <p className="truncate text-xs font-medium text-paper">{employeeName(emp)}</p>
-                          <p className="text-[10px] text-paper-dim">
+                          <p className="text-xs sm:text-[10px] text-paper-dim">
                             {t('shiftBoard.desiredWorkAndMax', { days: emp.desiredWorkDaysPerWeek, max: emp.maxConsecutiveDays })}
                           </p>
                         </div>
                       </div>
 
-                      <div className="mt-1.5 flex gap-[3px]">
+                      <div className="mt-1.5 hidden gap-[3px] sm:flex">
                         {WEEKDAYS.map((day) => {
                           const isOff = emp.desiredDaysOff.includes(day);
                           const dayLabel = weekdayLabel(day, locale);
@@ -405,7 +463,7 @@ export function ShiftBoard({
                             <span
                               key={day}
                               title={isOff ? t('shiftBoard.offWeekdayTitle', { day: dayLabel }) : dayLabel}
-                              className={`flex h-4 w-4 items-center justify-center rounded-sm text-[9px] ${
+                              className={`flex h-4 w-4 items-center justify-center rounded-sm text-xs sm:text-[9px] ${
                                 isOff ? 'bg-seal/25 text-seal-bright' : 'bg-void text-paper-dim/60'
                               }`}
                             >
@@ -415,7 +473,7 @@ export function ShiftBoard({
                         })}
                       </div>
 
-                      <div className="mt-1.5 flex flex-wrap gap-1">
+                      <div className="mt-1.5 hidden flex-wrap gap-1 sm:flex">
                         {capable.map((f) => {
                           const isMain = f === emp.mainFacility;
                           return (
@@ -428,7 +486,7 @@ export function ShiftBoard({
                                   ? t('shiftBoard.mainFacilityBadge', { facility: facilityName(f) })
                                   : t('shiftBoard.helpFacilityBadge', { facility: facilityName(f) })
                               }
-                              className={`cursor-grab select-none rounded-full px-1.5 py-[1px] text-[9px] transition active:cursor-grabbing ${
+                              className={`cursor-grab select-none rounded-full px-1.5 py-[1px] text-xs sm:text-[9px] transition active:cursor-grabbing ${
                                 isMain ? 'text-void' : 'border border-dashed text-paper-dim'
                               }`}
                               style={
@@ -467,6 +525,7 @@ export function ShiftBoard({
                           >
                             <button
                               type="button"
+                              data-compact
                               onClick={() => onCreateShift({ mode: 'create', date, facility: emp.mainFacility, employeeId: emp.id })}
                               className="flex h-9 w-full items-center justify-center rounded-sm border border-dashed border-paper/10 text-paper-dim/0 transition hover:border-gold/50 hover:text-gold"
                             >
@@ -490,6 +549,7 @@ export function ShiftBoard({
                         >
                           <button
                             type="button"
+                            data-compact
                             draggable
                             onDragStart={(e) => setShiftDragPayload(e, { kind: 'shift', shiftId: shift.id })}
                             onClick={() => onEditShift(shift)}
@@ -518,11 +578,31 @@ export function ShiftBoard({
           </table>
         </div>
 
-        <PostCoveragePanel dates={dates} shifts={shifts} postRequirements={postRequirements} onSelectDate={handleSelectCoverageDate} />
+        <div className="hidden sm:contents">
+          <PostCoveragePanel dates={dates} shifts={shifts} postRequirements={postRequirements} onSelectDate={handleSelectCoverageDate} />
+        </div>
       </div>
       )}
 
-      {viewMode === 'edit' && <p className="text-[11px] text-paper-dim">{t('shiftBoard.legend')}</p>}
+      {viewMode === 'edit' && <p className="hidden text-xs sm:text-[11px] text-paper-dim sm:block">{t('shiftBoard.legend')}</p>}
+      {viewMode === 'edit' && <p className="text-xs text-paper-dim sm:hidden">{t('shiftBoard.legendMobile')}</p>}
+
+      {coverageOpen && (
+        <BottomSheet title={t('coverage.heading')} onClose={() => setCoverageOpen(false)}>
+          <PostCoveragePanel
+            hideHeading
+            dates={dates}
+            shifts={shifts}
+            postRequirements={postRequirements}
+            onSelectDate={(date) => {
+              setCoverageOpen(false);
+              handleSelectCoverageDate(date);
+            }}
+          />
+        </BottomSheet>
+      )}
+
+      {infoEmployee && <StaffInfoSheet employee={infoEmployee} onClose={() => setInfoEmployee(null)} />}
 
       {previewResult && (
         <AutoAssignPreviewModal

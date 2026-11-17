@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeftRight, Bell, Check, ChevronLeft, ChevronRight, Copy, Users } from 'lucide-react';
+import { ArrowLeftRight, Bell, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Copy, Users } from 'lucide-react';
 import { NinjaAvatar } from './NinjaAvatar';
 import { FACILITY_COLOR, FACILITY_ORDER, capableFacilities, sortEmployeesByFacility } from '../data/facilities';
 import { FACILITY_ICON } from './facilityIcon';
-import { formatDateJp, todayLocalIso, weekdayJp } from '../lib/format';
+import { formatDateJp, shiftDate, todayLocalIso, weekdayJp } from '../lib/format';
 import { MOOD_COLOR } from '../lib/mood';
 import { translateReason, formatMonthLabel } from '../lib/i18n';
 import {
@@ -16,6 +16,7 @@ import {
   defaultView,
 } from '../lib/monthGrid';
 import { useLabelContext } from '../hooks/LabelContext';
+import { useIsPhone } from '../hooks/useIsPhone';
 import type { Employee, MoodResult, ShiftEntry } from '../types';
 
 interface MyShiftsViewProps {
@@ -24,6 +25,16 @@ interface MyShiftsViewProps {
   shifts: ShiftEntry[];
   moodMap: Map<string, MoodResult>;
 }
+
+// 月曜はじまりの週の月曜日(スマホの「自分の予定」の週の区切り)
+function mondayOf(date: string): string {
+  const jsWeekday = new Date(`${date}T00:00:00Z`).getUTCDay(); // 0=日 .. 6=土
+  return shiftDate(date, jsWeekday === 0 ? -6 : 1 - jsWeekday);
+}
+
+// 全員の表の「自分の列」: PCは今までどおり(背景は半透明)。スマホは日付の列のすぐ右に固定する(不透明)
+const ME_CELL = 'border-x border-x-gold/50 bg-gold/10';
+const ME_STICKY_CELL = 'sticky left-[92px] z-10 border-x border-x-gold/50 bg-[#26231c]';
 
 function todayOr(dates: string[]): string {
   const today = todayLocalIso();
@@ -58,6 +69,9 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
   const [lastSeenAt, setLastSeenAt] = useState<string | null>(() => loadLastSeenAt(employee.id));
   const [copiedCandidateId, setCopiedCandidateId] = useState<string | null>(null);
   const rowRefs = useRef(new Map<string, HTMLTableRowElement>());
+  const isPhone = useIsPhone();
+  const [showAll, setShowAll] = useState(false);
+  const [weekStart, setWeekStart] = useState(() => mondayOf(todayLocalIso()));
 
   // 開いた瞬間は月初(1日)が一番上に表示されており、今日の行が下の方に隠れて見えないことが
   // あった。タブを開くたび、今日の行(範囲外なら選択中の行)が縦スクロールの中央に来るよう
@@ -79,6 +93,10 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
   }, [employee.id]);
 
   const sortedEmployees = sortEmployeesByFacility(employees);
+  // スマホの全員の表: 自分を一番左(日付の列のすぐ右)に置く
+  const tableEmployees = isPhone
+    ? [...sortedEmployees.filter((e) => e.id === employee.id), ...sortedEmployees.filter((e) => e.id !== employee.id)]
+    : sortedEmployees;
 
   const shiftByKey = new Map<string, ShiftEntry>();
   for (const s of shifts) shiftByKey.set(`${s.date}_${s.employeeId}`, s);
@@ -95,6 +113,12 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
     ? myShifts.filter((s) => s.updatedAt > lastSeenAt).sort((a, b) => a.date.localeCompare(b.date))
     : [];
   const changedShiftIds = new Set(changedShifts.map((s) => s.id));
+
+  // スマホ用: 次の出勤(今日以降で一番近いもの)と、自分の今週(週を送れる)の予定
+  const todayIso = todayLocalIso();
+  const nextShift = myShifts.filter((s) => s.date >= todayIso).sort((a, b) => a.date.localeCompare(b.date))[0];
+  const myShiftByDate = new Map(myShifts.map((s) => [s.date, s]));
+  const weekDates = Array.from({ length: 7 }, (_, i) => shiftDate(weekStart, i));
 
   const acknowledgeChanges = () => {
     const now = new Date().toISOString();
@@ -152,17 +176,17 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3 rounded-xl border border-paper/10 bg-void-soft/50 p-3">
+    <div className="flex flex-col gap-4">
+      <div className="order-1 flex items-center gap-3 rounded-xl border border-paper/10 bg-void-soft/50 p-3 sm:order-none">
         <NinjaAvatar employee={employee} mood="neutral" size="md" />
         <div>
           <p className="font-mincho text-sm font-bold text-paper">{employeeName(employee)}</p>
-          <p className="text-[11px] text-paper-dim">{t('myShifts.viewOnlyNotice')}</p>
+          <p className="text-xs sm:text-[11px] text-paper-dim">{t('myShifts.viewOnlyNotice')}</p>
         </div>
       </div>
 
       {changedShifts.length > 0 && (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-gold/40 bg-gold/10 px-4 py-2.5 text-xs text-gold">
+        <div className="order-2 flex items-center justify-between gap-3 rounded-xl border border-gold/40 bg-gold/10 px-4 py-2.5 text-xs text-gold sm:order-none">
           <span className="flex items-center gap-2">
             <Bell size={14} />
             {t('myShifts.changedBanner', {
@@ -181,6 +205,107 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
         </div>
       )}
 
+      {/* スマホ: 次の出勤 */}
+      <div className="order-3 rounded-xl border border-gold/30 bg-void-soft/50 p-4 sm:hidden">
+        <h2 className="font-mincho text-sm font-bold text-paper">{t('myShifts.nextShiftHeading')}</h2>
+        {nextShift ? (
+          <button
+            type="button"
+            onClick={() => setSelectedDate(nextShift.date)}
+            className="mt-2 flex w-full items-center gap-3 text-left"
+          >
+            <span className="h-10 w-1.5 shrink-0 rounded-full" style={{ background: FACILITY_COLOR[nextShift.facility] }} />
+            <span className="min-w-0 flex-1">
+              <span className="block text-base font-bold text-paper">
+                {formatDateJp(nextShift.date, locale)}
+                {nextShift.date === todayIso && (
+                  <span className="ml-2 rounded-full bg-gold/20 px-2 py-0.5 text-xs font-medium text-gold">{t('myShifts.todayBadge')}</span>
+                )}
+              </span>
+              <span className="block text-sm text-paper-dim">
+                {nextShift.start}–{nextShift.end} · {facilityName(nextShift.facility)}
+              </span>
+            </span>
+          </button>
+        ) : (
+          <p className="mt-2 text-sm text-paper-dim">{t('myShifts.noNextShift')}</p>
+        )}
+      </div>
+
+      {/* スマホ: 自分の予定(7日分を縦に。週を送れる) */}
+      <div className="order-4 rounded-xl border border-paper/10 bg-void-soft/50 p-4 sm:hidden">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-mincho text-sm font-bold text-paper">{t('myShifts.thisWeekHeading')}</h2>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setWeekStart((w) => shiftDate(w, -7))}
+              aria-label={t('myShifts.prevWeek')}
+              className="flex items-center justify-center rounded-full border border-paper/20 text-paper-dim"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-xs text-paper-dim">
+              {weekDates[0].slice(5)}〜{weekDates[6].slice(5)}
+            </span>
+            <button
+              type="button"
+              onClick={() => setWeekStart((w) => shiftDate(w, 7))}
+              aria-label={t('myShifts.nextWeek')}
+              className="flex items-center justify-center rounded-full border border-paper/20 text-paper-dim"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+        <ul className="mt-2 divide-y divide-paper/10">
+          {weekDates.map((d) => {
+            const s = myShiftByDate.get(d);
+            const isSelected = d === selectedDate;
+            return (
+              <li key={d}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(d)}
+                  aria-pressed={isSelected}
+                  className={`flex w-full items-center gap-3 px-1 py-2 text-left ${isSelected ? 'bg-gold/10' : ''}`}
+                >
+                  <span className={`w-24 shrink-0 text-sm ${d === todayIso ? 'font-bold text-gold' : 'text-paper'}`}>
+                    {formatDateJp(d, locale)}
+                  </span>
+                  {s ? (
+                    <span className="flex min-w-0 flex-1 items-center gap-2">
+                      <span className="h-5 w-1 shrink-0 rounded-full" style={{ background: FACILITY_COLOR[s.facility] }} />
+                      <span className="text-sm text-paper">
+                        {s.start}–{s.end}
+                      </span>
+                      <span className="truncate text-xs text-paper-dim">{facilityName(s.facility)}</span>
+                      {changedShiftIds.has(s.id) && (
+                        <span className="shrink-0 rounded-full bg-gold/20 px-2 py-0.5 text-xs text-gold">{t('myShifts.changedMark')}</span>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-paper-dim/70">{t('myShifts.weekOff')}</span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      {/* スマホ: 全員のシフト表は、押すと開く(最初は閉じる) */}
+      <button
+        type="button"
+        onClick={() => setShowAll((v) => !v)}
+        aria-expanded={showAll}
+        className="order-7 flex w-full items-center justify-between rounded-xl border border-paper/20 px-4 text-sm text-paper sm:hidden"
+      >
+        <span>{showAll ? t('myShifts.hideAll') : t('myShifts.showAll')}</span>
+        {showAll ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+      </button>
+
+      <div className={`order-8 flex-col gap-4 sm:order-none sm:flex ${showAll ? 'flex' : 'hidden'}`}>
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -208,12 +333,12 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
               <th className="sticky left-0 top-0 z-30 min-w-[92px] border-b border-r border-paper/10 bg-void-soft px-2 py-2 text-left font-medium text-paper-dim">
                 {t('myShifts.dateHeader')}
               </th>
-              {sortedEmployees.map((emp) => {
+              {tableEmployees.map((emp) => {
                 const isMe = emp.id === employee.id;
                 return (
                   <th
                     key={emp.id}
-                    className={`sticky top-0 z-20 min-w-[80px] border-b px-1 py-2 text-center font-medium ${
+                    className={`${isMe && isPhone ? 'sticky left-[92px] top-0 z-30' : 'sticky top-0 z-20'} min-w-[80px] border-b px-1 py-2 text-center font-medium ${
                       isMe ? 'border-x border-x-gold/50 border-b-paper/10 bg-[#2a2519]' : 'border-r border-paper/10 bg-void-soft'
                     }`}
                     style={{ borderTop: `3px solid ${FACILITY_COLOR[emp.mainFacility]}` }}
@@ -247,7 +372,7 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
                       {formatDateJp(date, locale)}
                     </button>
                   </td>
-                  {sortedEmployees.map((emp) => {
+                  {tableEmployees.map((emp) => {
                     const shift = shiftByKey.get(`${date}_${emp.id}`);
                     const isMe = emp.id === employee.id;
                     if (!shift) {
@@ -256,7 +381,7 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
                           key={emp.id}
                           onClick={() => setSelectedDate(date)}
                           className={`cursor-pointer border-b border-b-paper/5 p-0.5 ${
-                            isMe ? 'border-x border-x-gold/50 bg-gold/10' : 'border-r border-r-paper/5'
+                            isMe ? (isPhone ? ME_STICKY_CELL : ME_CELL) : 'border-r border-r-paper/5'
                           }`}
                         />
                       );
@@ -267,11 +392,12 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
                       <td
                         key={emp.id}
                         className={`border-b border-b-paper/5 p-0.5 ${
-                          isMe ? 'border-x border-x-gold/50 bg-gold/10' : 'border-r border-r-paper/5'
+                          isMe ? (isPhone ? ME_STICKY_CELL : ME_CELL) : 'border-r border-r-paper/5'
                         }`}
                       >
                         <button
                           type="button"
+                          data-compact
                           onClick={() => setSelectedDate(date)}
                           title={`${employeeName(emp)} ${facilityName(shift.facility)} ${shift.start}–${shift.end}${
                             isChanged ? ` / ${t('myShifts.changedBadgeTitle')}` : ''
@@ -302,13 +428,14 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
           </tbody>
         </table>
       </div>
+      </div>
 
-      <div className="rounded-xl border border-paper/10 bg-void-soft/50 p-4">
+      <div className="order-5 rounded-xl border border-paper/10 bg-void-soft/50 p-4 sm:order-none">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-mincho text-sm font-bold text-paper">
             {t('myShifts.placementHeading', { date: formatDateJp(selectedDate, locale) })}
           </h2>
-          <span className="flex items-center gap-1 text-[11px] text-paper-dim">
+          <span className="flex items-center gap-1 text-xs sm:text-[11px] text-paper-dim">
             <Users size={12} />
             {t('myShifts.attendanceCount', { n: shiftsForSelected.length })}
           </span>
@@ -327,7 +454,7 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
                   <p className="text-xs font-medium text-paper">{facilityName(facility)}</p>
                 </div>
                 {facilityShifts.length === 0 ? (
-                  <p className="py-2 text-center text-[11px] text-paper-dim/70">{t('myShifts.noPlacement')}</p>
+                  <p className="py-2 text-center text-xs sm:text-[11px] text-paper-dim/70">{t('myShifts.noPlacement')}</p>
                 ) : (
                   <div className="space-y-2">
                     {facilityShifts.map((shift) => {
@@ -348,11 +475,11 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
                             title={mood?.reasons.map((r) => translateReason(r, locale)).join(' / ')}
                           />
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-[11px] font-medium text-paper">
+                            <p className="truncate text-xs sm:text-[11px] font-medium text-paper">
                               {employeeName(person)}
                               {isMe && <span className="ml-1 text-gold">{t('myShifts.you')}</span>}
                             </p>
-                            <p className="text-[10px] text-paper-dim">{shift.start}–{shift.end}</p>
+                            <p className="text-xs sm:text-[10px] text-paper-dim">{shift.start}–{shift.end}</p>
                           </div>
                         </div>
                       );
@@ -366,12 +493,12 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
       </div>
 
       {myShiftToday && (
-        <div className="rounded-xl border border-gold/30 bg-void-soft/50 p-4">
+        <div className="order-6 rounded-xl border border-gold/30 bg-void-soft/50 p-4 sm:order-none">
           <div className="mb-2 flex items-center gap-1.5">
             <ArrowLeftRight size={14} className="text-gold" />
             <h2 className="font-mincho text-sm font-bold text-paper">{t('myShifts.swapCandidatesHeading')}</h2>
           </div>
-          <p className="mb-3 text-[11px] text-paper-dim">
+          <p className="mb-3 text-xs sm:text-[11px] text-paper-dim">
             {t('myShifts.swapExplain', {
               facility: facilityName(myShiftToday.facility),
               start: myShiftToday.start,
@@ -379,7 +506,7 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
             })}
           </p>
           {swapCandidates.length === 0 ? (
-            <p className="text-[11px] text-paper-dim/70">{t('myShifts.noSwapCandidates')}</p>
+            <p className="text-xs sm:text-[11px] text-paper-dim/70">{t('myShifts.noSwapCandidates')}</p>
           ) : (
             <div className="space-y-2">
               {swapCandidates.map((c) => {
@@ -397,15 +524,15 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
                       <div>
                         <p className="text-xs font-medium text-paper">{employeeName(c)}</p>
                         <div className="mt-0.5 flex flex-wrap gap-1">
-                          <span className={`rounded-full px-1.5 py-[1px] text-[9px] ${isMain ? 'bg-jade/15 text-jade' : 'bg-gold/15 text-gold'}`}>
+                          <span className={`rounded-full px-1.5 py-[1px] text-xs sm:text-[9px] ${isMain ? 'bg-jade/15 text-jade' : 'bg-gold/15 text-gold'}`}>
                             {isMain ? t('autoAssign.homeFacility') : t('autoAssign.helpFacility')}
                           </span>
                           {isUsuallyOff && (
-                            <span className="rounded-full bg-seal/15 px-1.5 py-[1px] text-[9px] text-seal-bright">
+                            <span className="rounded-full bg-seal/15 px-1.5 py-[1px] text-xs sm:text-[9px] text-seal-bright">
                               {t('myShifts.usuallyOffBadge')}
                             </span>
                           )}
-                          <span className="rounded-full bg-paper/10 px-1.5 py-[1px] text-[9px] text-paper-dim">
+                          <span className="rounded-full bg-paper/10 px-1.5 py-[1px] text-xs sm:text-[9px] text-paper-dim">
                             {t('myShifts.monthShiftCount', { n: monthCount })}
                           </span>
                         </div>
@@ -414,7 +541,7 @@ export function MyShiftsView({ employee, employees, shifts, moodMap }: MyShiftsV
                     <button
                       type="button"
                       onClick={() => copySwapMessage(c)}
-                      className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition ${
+                      className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs sm:text-[11px] transition ${
                         isCopied
                           ? 'border-jade/50 bg-jade/10 text-jade'
                           : 'border-paper/20 text-paper-dim hover:border-gold hover:text-gold'

@@ -12,7 +12,8 @@ const MOOD_ICON: Record<Mood, typeof Smile> = {
   unhappy: Frown,
 };
 
-const SIZE_PX: Record<'sm' | 'md' | 'lg', number> = {
+const SIZE_PX: Record<'xs' | 'sm' | 'md' | 'lg', number> = {
+  xs: 32,
   sm: 44,
   md: 64,
   lg: 92,
@@ -22,7 +23,7 @@ interface NinjaAvatarProps {
   employee: Employee;
   mood: Mood;
   facility?: FacilityId;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   title?: string;
 }
 

@@ -18,9 +18,9 @@ export function NewDmModal({ directory, employeeMap, myProfileId, onSelect, onCl
   const others = directory.filter((d) => d.profileId !== myProfileId);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center sm:p-4" onClick={onClose}>
       <div
-        className="animate-rise flex max-h-[80vh] w-full max-w-sm flex-col rounded-xl border border-gold/30 bg-void-soft p-5 shadow-2xl"
+        className="animate-rise flex max-h-[80vh] w-full max-w-sm flex-col rounded-t-2xl border border-gold/30 max-sm:max-h-[90vh] sm:rounded-xl bg-void-soft p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">

@@ -28,9 +28,9 @@ export function FinanceEditModal({ draft, onClose, onSave }: FinanceEditModalPro
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center sm:p-4" onClick={onClose}>
       <div
-        className="animate-rise w-full max-w-sm rounded-xl border border-gold/30 bg-void-soft p-5 shadow-2xl"
+        className="animate-rise w-full max-w-sm rounded-t-2xl border border-gold/30 bg-void-soft p-5 shadow-2xl max-sm:max-h-[90vh] max-sm:overflow-y-auto sm:rounded-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -57,9 +57,9 @@ export function FinanceEditModal({ draft, onClose, onSave }: FinanceEditModalPro
               className="w-full rounded-md border border-paper/20 bg-void px-3 py-2 text-sm text-paper focus:border-gold focus:outline-none"
             />
           </div>
-          <p className="text-[11px] text-paper-dim">{t('financeModal.autoCalcNote')}</p>
+          <p className="text-xs sm:text-[11px] text-paper-dim">{t('financeModal.autoCalcNote')}</p>
 
-          <div className="flex justify-end gap-2 pt-1">
+          <div className="flex justify-end gap-2 pt-1 max-sm:sticky max-sm:bottom-0 max-sm:-mx-5 max-sm:-mb-5 max-sm:border-t max-sm:border-paper/10 max-sm:bg-void-soft max-sm:px-5 max-sm:py-3">
             <button
               type="button"
               onClick={onClose}

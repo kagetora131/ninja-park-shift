@@ -45,7 +45,7 @@ export function PersonalSummaryTable({ employees, shifts, dates }: PersonalSumma
     <div className="space-y-2">
       <div className="rounded-xl border border-paper/10 bg-void-soft/50 p-4">
         <h3 className="font-mincho text-sm font-bold text-paper">{t('personal.heading')}</h3>
-        <p className="mt-1 text-[11px] text-paper-dim">{t('personal.description')}</p>
+        <p className="mt-1 text-xs sm:text-[11px] text-paper-dim">{t('personal.description')}</p>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-paper/10">

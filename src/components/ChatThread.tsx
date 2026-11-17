@@ -118,7 +118,7 @@ function ReactionBar({
             disabled={!canReact}
             onClick={() => onToggle(messageId, key)}
             title={names.join(', ')}
-            className={`rounded-full border px-1.5 py-[1px] text-[11px] transition ${
+            className={`rounded-full border px-1.5 py-[1px] text-xs sm:text-[11px] transition ${
               mine ? 'border-gold bg-gold/15 text-gold' : 'border-paper/15 text-paper-dim'
             } ${canReact ? 'hover:border-gold' : 'opacity-60'}`}
           >
@@ -341,14 +341,14 @@ export function ChatThread({
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-mincho text-sm font-bold text-paper">{title}</h3>
           {conversation.type !== 'broadcast' && (
-            <p className="mt-0.5 text-[10px] text-paper-dim">{t('chat.managerVisibilityNotice')}</p>
+            <p className="mt-0.5 text-xs sm:text-[10px] text-paper-dim">{t('chat.managerVisibilityNotice')}</p>
           )}
         </div>
         {canManageMembers && (
           <button
             type="button"
             onClick={() => setMembersOpen((v) => !v)}
-            className={`flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition ${
+            className={`flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs sm:text-[11px] transition ${
               membersOpen ? 'border-gold text-gold' : 'border-paper/20 text-paper-dim hover:border-gold hover:text-gold'
             }`}
           >
@@ -367,10 +367,10 @@ export function ChatThread({
               return (
                 <span
                   key={profileId}
-                  className="flex items-center gap-1 rounded-full border border-paper/15 bg-void/40 px-2 py-0.5 text-[11px] text-paper"
+                  className="flex items-center gap-1 rounded-full border border-paper/15 bg-void/40 px-2 py-0.5 text-xs sm:text-[11px] text-paper"
                 >
                   {person.name}
-                  {isCreator && <span className="text-[9px] text-gold">{t('chat.creator')}</span>}
+                  {isCreator && <span className="text-xs sm:text-[9px] text-gold">{t('chat.creator')}</span>}
                   {isGroupCreator && profileId !== myProfileId && (
                     <button
                       type="button"
@@ -390,7 +390,7 @@ export function ChatThread({
             <button
               type="button"
               onClick={() => setAddMembersOpen(true)}
-              className="flex items-center gap-1 rounded-full border border-paper/20 px-2.5 py-1 text-[11px] text-paper-dim transition hover:border-gold hover:text-gold"
+              className="flex items-center gap-1 rounded-full border border-paper/20 px-2.5 py-1 text-xs sm:text-[11px] text-paper-dim transition hover:border-gold hover:text-gold"
             >
               <UserPlus size={12} />
               {t('chat.addMembers')}
@@ -398,7 +398,7 @@ export function ChatThread({
             <button
               type="button"
               onClick={handleLeaveGroup}
-              className="flex items-center gap-1 rounded-full border border-paper/20 px-2.5 py-1 text-[11px] text-paper-dim transition hover:border-seal hover:text-seal-bright"
+              className="flex items-center gap-1 rounded-full border border-paper/20 px-2.5 py-1 text-xs sm:text-[11px] text-paper-dim transition hover:border-seal hover:text-seal-bright"
             >
               <LogOut size={12} />
               {t('chat.leaveGroup')}
@@ -431,7 +431,7 @@ export function ChatThread({
       )}
       {pinnedMessages.length > 0 && (
         <div className="mx-4 mt-3 max-h-40 space-y-2 overflow-y-auto rounded-lg border border-gold/40 bg-gold/10 p-3">
-          <p className="flex items-center gap-1 text-[11px] font-medium text-gold">
+          <p className="flex items-center gap-1 text-xs sm:text-[11px] font-medium text-gold">
             <Pin size={12} />
             {t('chat.pinnedSectionHeading')}
           </p>
@@ -443,11 +443,11 @@ export function ChatThread({
                   <div className="flex items-center gap-1.5">
                     <span className="font-medium text-paper">{sender.name}</span>
                     {isBroadcast && isManagerProfile(message.senderProfileId) && (
-                      <span className="rounded-full bg-seal/20 px-1.5 py-[1px] text-[9px] font-medium text-seal-bright">
+                      <span className="rounded-full bg-seal/20 px-1.5 py-[1px] text-xs sm:text-[9px] font-medium text-seal-bright">
                         {t('chat.officialBadge')}
                       </span>
                     )}
-                    <span className="text-[10px] text-paper-dim">{formatTime(message.createdAt)}</span>
+                    <span className="text-xs sm:text-[10px] text-paper-dim">{formatTime(message.createdAt)}</span>
                   </div>
                   {message.body && <p className="mt-0.5 whitespace-pre-wrap text-paper">{message.body}</p>}
                   {message.imagePath && <ChatImage path={message.imagePath} getSignedImageUrl={getSignedImageUrl} />}
@@ -486,23 +486,23 @@ export function ChatThread({
                 <div className="flex items-baseline gap-2">
                   <span className="text-xs font-medium text-paper">{sender.name}</span>
                   {isBroadcast && isManagerProfile(message.senderProfileId) && (
-                    <span className="rounded-full bg-seal/20 px-1.5 py-[1px] text-[9px] font-medium text-seal-bright">
+                    <span className="rounded-full bg-seal/20 px-1.5 py-[1px] text-xs sm:text-[9px] font-medium text-seal-bright">
                       {t('chat.officialBadge')}
                     </span>
                   )}
-                  <span className="text-[10px] text-paper-dim">{formatTime(message.createdAt)}</span>
+                  <span className="text-xs sm:text-[10px] text-paper-dim">{formatTime(message.createdAt)}</span>
                   {message.editedAt && !isDeleted && (
                     isManager && editRevisions.length > 0 ? (
                       <button
                         type="button"
                         onClick={() => setOpenHistoryId(openHistoryId === message.id ? null : message.id)}
                         title={t('chat.editHistory')}
-                        className="text-[10px] text-paper-dim underline decoration-dotted transition hover:text-gold"
+                        className="text-xs sm:text-[10px] text-paper-dim underline decoration-dotted transition hover:text-gold"
                       >
                         ({t('chat.edited')})
                       </button>
                     ) : (
-                      <span className="text-[10px] text-paper-dim">({t('chat.edited')})</span>
+                      <span className="text-xs sm:text-[10px] text-paper-dim">({t('chat.edited')})</span>
                     )
                   )}
                   {canPin && !isDeleted && (
@@ -544,7 +544,7 @@ export function ChatThread({
                     <p className="mt-0.5 text-sm italic text-paper-dim">{t('chat.deletedMessage')}</p>
                     {isManager && deleteRevision && (
                       <div className="mt-1 rounded-md border border-dashed border-paper/20 bg-void/40 px-2.5 py-1.5">
-                        <p className="text-[10px] text-paper-dim">{t('chat.deletedOriginalLabel')}</p>
+                        <p className="text-xs sm:text-[10px] text-paper-dim">{t('chat.deletedOriginalLabel')}</p>
                         {deleteRevision.previousBody && (
                           <p className="mt-0.5 whitespace-pre-wrap text-xs text-paper/80">{deleteRevision.previousBody}</p>
                         )}
@@ -568,7 +568,7 @@ export function ChatThread({
                       <button
                         type="button"
                         onClick={() => setEditingId(null)}
-                        className="rounded-full border border-paper/20 px-2.5 py-1 text-[11px] text-paper-dim transition hover:text-paper"
+                        className="rounded-full border border-paper/20 px-2.5 py-1 text-xs sm:text-[11px] text-paper-dim transition hover:text-paper"
                       >
                         {t('common.cancel')}
                       </button>
@@ -576,7 +576,7 @@ export function ChatThread({
                         type="button"
                         onClick={() => saveEdit(message.id)}
                         disabled={!editDraft.trim()}
-                        className="rounded-full bg-gold/20 px-2.5 py-1 text-[11px] font-medium text-gold transition disabled:opacity-40"
+                        className="rounded-full bg-gold/20 px-2.5 py-1 text-xs sm:text-[11px] font-medium text-gold transition disabled:opacity-40"
                       >
                         {t('common.save')}
                       </button>
@@ -593,10 +593,10 @@ export function ChatThread({
 
                 {isManager && openHistoryId === message.id && editRevisions.length > 0 && (
                   <div className="mt-1 space-y-1 rounded-md border border-dashed border-paper/20 bg-void/40 px-2.5 py-1.5">
-                    <p className="text-[10px] text-paper-dim">{t('chat.editHistory')}</p>
+                    <p className="text-xs sm:text-[10px] text-paper-dim">{t('chat.editHistory')}</p>
                     {editRevisions.map((revision) => (
                       <div key={revision.id} className="text-xs">
-                        <span className="text-[10px] text-paper-dim">
+                        <span className="text-xs sm:text-[10px] text-paper-dim">
                           {t('chat.editHistoryItem', { time: formatTime(revision.createdAt) })}
                         </span>
                         <p className="whitespace-pre-wrap text-paper/80">{revision.previousBody}</p>
@@ -656,8 +656,8 @@ export function ChatThread({
               {t('chat.send')}
             </button>
           </div>
-          {uploading && <p className="mt-1.5 text-[11px] text-paper-dim">{t('chat.uploading')}</p>}
-          {sendFailed && <p className="mt-1.5 text-[11px] text-seal-bright">{t('chat.sendFailed')}</p>}
+          {uploading && <p className="mt-1.5 text-xs sm:text-[11px] text-paper-dim">{t('chat.uploading')}</p>}
+          {sendFailed && <p className="mt-1.5 text-xs sm:text-[11px] text-seal-bright">{t('chat.sendFailed')}</p>}
         </div>
       )}
     </div>

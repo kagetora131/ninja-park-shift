@@ -498,6 +498,56 @@ const STRINGS = {
   'chat.reactions.muscle': { ja: 'がんばろう', en: "Let's do this" },
   'chat.reactions.fire': { ja: 'ナイス', en: 'Awesome' },
   'chat.reactions.thanks': { ja: 'ありがとう', en: 'Thanks' },
+
+  // ---- スマホ対応(2026-11-17) ----
+  'common.close': { ja: '閉じる', en: 'Close' },
+  'header.menu': { ja: 'メニュー', en: 'Menu' },
+  'header.identity': { ja: '{role} / {name}', en: '{role} / {name}' },
+  'header.roleManagerShort': { ja: '頭領', en: 'Manager' },
+  'header.roleEmployeeShort': { ja: '従業員', en: 'Staff' },
+  'tab.more': { ja: 'その他', en: 'More' },
+  'tab.moreMenuLabel': { ja: 'その他のメニュー', en: 'More menu' },
+  'tab.mainMenuLabel': { ja: 'メインメニュー', en: 'Main menu' },
+  'tab.short.board': { ja: 'シフト表', en: 'Shifts' },
+  'tab.short.chat': { ja: 'チャット', en: 'Chat' },
+  'tab.short.staff': { ja: 'スタッフ', en: 'Staff' },
+  'tab.short.health': { ja: '健全性', en: 'Health' },
+  'tab.short.myShifts': { ja: 'マイシフト', en: 'My Shifts' },
+  'tab.short.myPreferences': { ja: '設定', en: 'Settings' },
+
+  'shiftBoard.legendMobile': { ja: 'マスを押すと、追加・編集できます。', en: 'Tap a cell to add or edit a shift.' },
+  'shiftBoard.blackDaysShort': { ja: '黒字 {black}/{total}日', en: 'Profit {black}/{total} days' },
+  'shiftBoard.facilityLegendLabel': { ja: '施設の色', en: 'Facility colors' },
+  'shiftBoard.autoAssignShort': { ja: '自動配置', en: 'Auto-assign' },
+  'shiftBoard.emptyMonth': {
+    ja: 'この月は、まだシフトがありません。「スタッフの自動配置」で作れます。',
+    en: 'There are no shifts yet this month. You can create them with "Auto-assign Staff".',
+  },
+  'staffInfo.heading': { ja: '{name}の希望・対応施設', en: "{name}: preferences & facilities" },
+  'staffInfo.tapHint': { ja: '名前を押すと、希望や対応施設が見られます', en: 'Tap a name to see preferences and facilities' },
+
+  'coverage.mobileSummary': {
+    ja: 'ポスト充足状況　不在 {empty} / 不足 {short} / 過多 {over}',
+    en: 'Staffing coverage: {empty} unstaffed / {short} short / {over} over',
+  },
+  'coverage.mobileSummaryOk': { ja: 'ポスト充足状況　問題なし', en: 'Staffing coverage: all good' },
+  'coverage.noShiftsThisMonth': {
+    ja: 'この月は、まだシフトがありません。「スタッフの自動配置」で作れます。',
+    en: 'There are no shifts yet this month. You can create them with "Auto-assign Staff".',
+  },
+
+  'health.noShiftsMonth': { ja: 'この月のシフトは、まだありません', en: 'There are no shifts for this month yet.' },
+
+  'myShifts.nextShiftHeading': { ja: '次の出勤', en: 'Your next shift' },
+  'myShifts.noNextShift': { ja: '今後の出勤予定はありません。', en: 'You have no upcoming shifts.' },
+  'myShifts.todayBadge': { ja: '今日', en: 'Today' },
+  'myShifts.thisWeekHeading': { ja: '自分の予定', en: 'Your schedule' },
+  'myShifts.weekOff': { ja: '休み', en: 'Off' },
+  'myShifts.prevWeek': { ja: '前の週', en: 'Previous week' },
+  'myShifts.nextWeek': { ja: '次の週', en: 'Next week' },
+  'myShifts.showAll': { ja: '全員のシフト表を見る', en: "Show everyone's shift table" },
+  'myShifts.hideAll': { ja: '全員のシフト表を閉じる', en: "Hide everyone's shift table" },
+  'myShifts.changedMark': { ja: '変更あり', en: 'Changed' },
 } as const satisfies Record<string, Record<Locale, string>>;
 
 export type StringKey = keyof typeof STRINGS;

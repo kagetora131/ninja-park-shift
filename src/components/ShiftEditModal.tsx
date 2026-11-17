@@ -60,9 +60,9 @@ export function ShiftEditModal({ draft, employees, onClose, onSave, onDelete }: 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center sm:p-4" onClick={onClose}>
       <div
-        className="animate-rise w-full max-w-md rounded-xl border border-gold/30 bg-void-soft p-5 shadow-2xl"
+        className="animate-rise w-full max-w-md rounded-t-2xl border border-gold/30 bg-void-soft p-5 shadow-2xl max-sm:max-h-[90vh] max-sm:overflow-y-auto sm:rounded-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -92,7 +92,7 @@ export function ShiftEditModal({ draft, employees, onClose, onSave, onDelete }: 
               ))}
             </select>
             {selectedEmployee && facility !== selectedEmployee.mainFacility && (
-              <p className="mt-1 text-[11px] text-gold">
+              <p className="mt-1 text-xs sm:text-[11px] text-gold">
                 {t('shiftEditModal.helpNotice', { facility: facilityName(selectedEmployee.mainFacility) })}
                 {!selectedEmployee.crossTrained.includes(facility) && t('shiftEditModal.unfamiliarSuffix')}
               </p>
@@ -130,7 +130,7 @@ export function ShiftEditModal({ draft, employees, onClose, onSave, onDelete }: 
                   key={p.label}
                   type="button"
                   onClick={() => applyPattern(p)}
-                  className="rounded-full border border-paper/20 px-2.5 py-1 text-[11px] text-paper-dim transition hover:border-gold hover:text-gold"
+                  className="rounded-full border border-paper/20 px-2.5 py-1 text-xs sm:text-[11px] text-paper-dim transition hover:border-gold hover:text-gold"
                 >
                   {locale === 'en' ? p.labelEn : p.label}
                 </button>
@@ -191,7 +191,7 @@ export function ShiftEditModal({ draft, employees, onClose, onSave, onDelete }: 
             />
           </div>
 
-          <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center justify-between pt-1 max-sm:sticky max-sm:bottom-0 max-sm:-mx-5 max-sm:-mb-5 max-sm:border-t max-sm:border-paper/10 max-sm:bg-void-soft max-sm:px-5 max-sm:py-3">
             {draft.mode === 'edit' && existing ? (
               <button
                 type="button"

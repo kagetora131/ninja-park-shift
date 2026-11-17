@@ -38,14 +38,14 @@ export function AvatarPicker({ avatarBase, gender, top, skinColor, glasses, onCh
       />
       <div className="flex-1 space-y-2">
         <div className="flex items-center gap-2">
-          <span className="w-14 shrink-0 text-[11px] text-paper-dim">{t('avatarPicker.gender')}</span>
+          <span className="w-14 shrink-0 text-xs sm:text-[11px] text-paper-dim">{t('avatarPicker.gender')}</span>
           <div className="flex gap-1.5">
             {GENDERS.map(([value, label]) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => setGender(value)}
-                className={`rounded-full border px-2.5 py-0.5 text-[11px] transition ${
+                className={`rounded-full border px-2.5 py-0.5 text-xs sm:text-[11px] transition ${
                   gender === value
                     ? 'border-gold bg-gold/10 text-gold'
                     : 'border-paper/20 text-paper-dim hover:border-paper/40'
@@ -58,15 +58,16 @@ export function AvatarPicker({ avatarBase, gender, top, skinColor, glasses, onCh
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="w-14 shrink-0 text-[11px] text-paper-dim">{t('avatarPicker.skinColor')}</span>
-          <div className="flex gap-1.5">
+          <span className="w-14 shrink-0 text-xs sm:text-[11px] text-paper-dim">{t('avatarPicker.skinColor')}</span>
+          <div className="flex flex-wrap gap-1.5">
             {SKIN_COLORS.map((color) => (
               <button
                 key={color}
                 type="button"
                 onClick={() => onChange({ skinColor: color })}
                 title={t('avatarPicker.skinColorTitle')}
-                className="h-5 w-5 rounded-full transition"
+                data-compact
+                className="h-8 w-8 rounded-full transition sm:h-5 sm:w-5"
                 style={{
                   background: `#${color}`,
                   boxShadow: skinColor === color ? '0 0 0 2px var(--color-gold)' : '0 0 0 1px var(--color-paper-dim)',
@@ -77,11 +78,11 @@ export function AvatarPicker({ avatarBase, gender, top, skinColor, glasses, onCh
         </div>
 
         <label className="flex items-center gap-2">
-          <span className="w-14 shrink-0 text-[11px] text-paper-dim">{t('avatarPicker.hair')}</span>
+          <span className="w-14 shrink-0 text-xs sm:text-[11px] text-paper-dim">{t('avatarPicker.hair')}</span>
           <select
             value={top}
             onChange={(e) => onChange({ top: e.target.value })}
-            className="flex-1 rounded-md border border-paper/20 bg-void px-2 py-1 text-[11px] text-paper focus:border-gold focus:outline-none"
+            className="flex-1 rounded-md border border-paper/20 bg-void px-2 py-1 text-xs sm:text-[11px] text-paper focus:border-gold focus:outline-none"
           >
             {hairOptions.map((o) => (
               <option key={o.value} value={o.value}>
@@ -91,7 +92,7 @@ export function AvatarPicker({ avatarBase, gender, top, skinColor, glasses, onCh
           </select>
         </label>
 
-        <label className="flex items-center gap-2 text-[11px] text-paper-dim">
+        <label className="flex items-center gap-2 text-xs sm:text-[11px] text-paper-dim">
           <span className="w-14 shrink-0">{t('avatarPicker.glasses')}</span>
           <input
             type="checkbox"

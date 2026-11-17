@@ -113,9 +113,9 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center sm:p-4" onClick={onClose}>
       <div
-        className="animate-rise max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-gold/30 bg-void-soft p-5 shadow-2xl"
+        className="animate-rise max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-gold/30 bg-void-soft p-5 shadow-2xl sm:rounded-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -167,7 +167,7 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
               ))}
             </select>
             {role === '社員' && (
-              <p className="mt-1 text-[11px] text-paper-dim">{t('employeeModal.fulltimeSalaryNote')}</p>
+              <p className="mt-1 text-xs sm:text-[11px] text-paper-dim">{t('employeeModal.fulltimeSalaryNote')}</p>
             )}
           </div>
 
@@ -337,11 +337,11 @@ export function EmployeeEditModal({ draft, onClose, onSave, onDelete }: Employee
                   />
                 </div>
               )}
-              {accountStatus === 'error' && <p className="mt-2 text-[11px] text-seal-bright">{accountError}</p>}
+              {accountStatus === 'error' && <p className="mt-2 text-xs sm:text-[11px] text-seal-bright">{accountError}</p>}
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center justify-between pt-1 max-sm:sticky max-sm:bottom-0 max-sm:-mx-5 max-sm:-mb-5 max-sm:border-t max-sm:border-paper/10 max-sm:bg-void-soft max-sm:px-5 max-sm:py-3">
             {draft.mode === 'edit' && existing ? (
               <button
                 type="button"

@@ -106,14 +106,14 @@ export function ChatView({ employeeMap, myProfileId, isManager, chat }: ChatView
           <button
             type="button"
             onClick={() => setShowNewDm(true)}
-            className="flex-1 rounded-full border border-paper/20 px-2 py-1.5 text-[11px] text-paper-dim transition hover:border-gold hover:text-gold"
+            className="flex-1 rounded-full border border-paper/20 px-2 py-1.5 text-xs sm:text-[11px] text-paper-dim transition hover:border-gold hover:text-gold"
           >
             {t('chat.newDm')}
           </button>
           <button
             type="button"
             onClick={() => setShowNewGroup(true)}
-            className="flex-1 rounded-full border border-paper/20 px-2 py-1.5 text-[11px] text-paper-dim transition hover:border-gold hover:text-gold"
+            className="flex-1 rounded-full border border-paper/20 px-2 py-1.5 text-xs sm:text-[11px] text-paper-dim transition hover:border-gold hover:text-gold"
           >
             {t('chat.newGroup')}
           </button>

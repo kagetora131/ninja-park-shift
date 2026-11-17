@@ -54,7 +54,7 @@ function LabelRowEditor({
           <button
             type="button"
             onClick={handleSave}
-            className="flex items-center gap-1 rounded-md border border-gold/50 px-2 py-1 text-[11px] text-gold transition hover:bg-gold/10"
+            className="flex items-center gap-1 rounded-md border border-gold/50 px-2 py-1 text-xs sm:text-[11px] text-gold transition hover:bg-gold/10"
           >
             <Save size={11} />
             {saved ? t('labels.saved') : t('common.save')}
@@ -151,7 +151,7 @@ export function LabelManagerView() {
           <Plus size={14} />
           {t('labels.addHeading')}
         </h3>
-        <p className="mb-3 text-[11px] text-paper-dim">{t('labels.addDescription')}</p>
+        <p className="mb-3 text-xs sm:text-[11px] text-paper-dim">{t('labels.addDescription')}</p>
         <form onSubmit={handleAdd} className="grid gap-2.5 sm:grid-cols-5">
           <select
             value={newEntityType}

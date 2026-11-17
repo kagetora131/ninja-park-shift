@@ -71,9 +71,9 @@ export function HealthDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center sm:p-4" onClick={onClose}>
       <div
-        className="animate-rise flex max-h-[85vh] w-full max-w-lg flex-col rounded-xl border border-gold/30 bg-void-soft p-5 shadow-2xl"
+        className="animate-rise flex max-h-[85vh] w-full max-w-lg flex-col rounded-t-2xl border border-gold/30 max-sm:max-h-[90vh] sm:rounded-xl bg-void-soft p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
@@ -114,7 +114,7 @@ export function HealthDetailModal({
                   <p className="mt-1 text-paper-dim">{mood.reasons.map((r) => translateReason(r, locale)).join(' / ')}</p>
                 )}
                 {suggestion && (
-                  <p className="mt-1.5 text-[11px] text-gold">
+                  <p className="mt-1.5 text-xs sm:text-[11px] text-gold">
                     <span className="font-medium">{t('health.suggestionLabel')}: </span>
                     {suggestion}
                   </p>
@@ -124,7 +124,7 @@ export function HealthDetailModal({
                   <button
                     type="button"
                     onClick={() => runSimulation(shift)}
-                    className="mt-2 rounded-full border border-paper/20 px-2.5 py-1 text-[11px] text-paper-dim transition hover:border-gold hover:text-gold"
+                    className="mt-2 rounded-full border border-paper/20 px-2.5 py-1 text-xs sm:text-[11px] text-paper-dim transition hover:border-gold hover:text-gold"
                   >
                     {t('health.simulateRemove')}
                   </button>
@@ -132,7 +132,7 @@ export function HealthDetailModal({
 
                 {isSimulatingThis && sim && (
                   <div className="mt-2 rounded-lg border border-gold/40 bg-gold/10 p-2.5">
-                    <p className="text-[11px] text-gold">
+                    <p className="text-xs sm:text-[11px] text-gold">
                       {t('health.simulateResult', {
                         before: sim.beforeCounts.tired + sim.beforeCounts.unhappy,
                         after: sim.afterCounts.tired + sim.afterCounts.unhappy,
@@ -144,7 +144,7 @@ export function HealthDetailModal({
                       type="button"
                       onClick={applyRemoval}
                       disabled={applying}
-                      className="mt-2 flex items-center gap-1 rounded-full border border-seal/50 px-2.5 py-1 text-[11px] text-seal-bright transition hover:bg-seal/10 disabled:opacity-50"
+                      className="mt-2 flex items-center gap-1 rounded-full border border-seal/50 px-2.5 py-1 text-xs sm:text-[11px] text-seal-bright transition hover:bg-seal/10 disabled:opacity-50"
                     >
                       <Trash2 size={11} />
                       {t('health.applyRemove')}
