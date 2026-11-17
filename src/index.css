@@ -75,6 +75,16 @@ body {
   animation: rise-fade 0.35s ease-out both;
 }
 
+/* 長押しでドラッグする部品(シフト表のスタッフの顔・配置済みのマス)。端末のメニュー・文字選択を出さない */
+[data-dnd] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+[data-dnd] img {
+  pointer-events: none;
+}
+
 /* スマホ幅(sm=640px未満)だけ、指で押しやすく・読みやすくする(2026-11-17)。PC幅の見た目は変えない。
    - ボタン・選択欄・折りたたみの見出しは、押す範囲を44px以上にする
    - 入力欄・選択欄の文字は16px以上にする(iPhoneで、入力時に画面が勝手に拡大されるのを防ぐ)

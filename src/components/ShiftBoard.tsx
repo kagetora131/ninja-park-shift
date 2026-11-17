@@ -13,12 +13,13 @@ import { WEEKDAYS } from '../data/constants';
 import { SHIFT_PATTERNS } from '../data/shiftPatterns';
 import { formatDateJp, todayLocalIso } from '../lib/format';
 import { MOOD_COLOR } from '../lib/mood';
-import { readShiftDragPayload, setShiftDragPayload } from '../lib/dragDrop';
+import { readShiftDragPayload, setShiftDragPayload, type ShiftDragPayload } from '../lib/dragDrop';
 import { facilityShortLabel, formatMonthLabel, translateReason, weekdayLabel } from '../lib/i18n';
 import { autoAssignShifts } from '../lib/autoAssign';
 import { computeCoverageRows } from '../lib/postCoverage';
 import { isPhoneViewport } from '../lib/viewport';
 import { useAutoScrollOnDrag } from '../hooks/useAutoScrollOnDrag';
+import { useTouchDragDrop } from '../hooks/useTouchDragDrop';
 import {
   CALENDAR_END_MONTH,
   CALENDAR_END_YEAR,
@@ -87,6 +88,7 @@ export function ShiftBoard({
   const [coverageOpen, setCoverageOpen] = useState(false);
   const [infoEmployee, setInfoEmployee] = useState<Employee | null>(null);
   const columnRefs = useRef(new Map<string, HTMLTableCellElement>());
+  const boardRef = useRef<HTMLDivElement>(null);
 
   const dates = datesInMonth(view.year, view.month);
 
@@ -133,11 +135,33 @@ export function ShiftBoard({
     window.setTimeout(() => setHighlightDate((d) => (d === date ? null : d)), 2500);
   };
 
-  const handleDropOnCell = async (targetEmployee: Employee, targetDate: string, e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOverCell(null);
-    const payload = readShiftDragPayload(e);
-    if (!payload) return;
+  // ドラッグで配置・移動・入れ替えをする本体(PCのHTML5ドラッグと、スマホの長押しドラッグの両方から呼ぶ)
+  const performDrop = async (payload: ShiftDragPayload, targetEmployee: Employee, targetDate: string) => {
+    // スタッフの顔をセルへ: そのスタッフを、セルの日付に所属施設で配置する(セルが誰の行でもよい)
+    if (payload.kind === 'staff') {
+      const staff = employeeMap.get(payload.employeeId);
+      if (!staff) return;
+      const existing = shiftByKey.get(`${targetDate}_${staff.id}`);
+      const pattern = SHIFT_PATTERNS[staff.mainFacility][0];
+      await onAssignShift({
+        date: targetDate,
+        employeeId: staff.id,
+        facility: staff.mainFacility,
+        start: existing?.start ?? pattern.start,
+        end: existing?.end ?? pattern.end,
+        breakMinutes: existing?.breakMinutes ?? pattern.breakMinutes,
+        isDesired: existing?.isDesired ?? true,
+        note: existing?.facility === staff.mainFacility ? existing.note : undefined,
+      });
+      showNotice(
+        t('shiftBoard.staffDroppedNotice', {
+          employee: employeeName(staff),
+          date: formatDateJp(targetDate, locale),
+          facility: facilityName(staff.mainFacility),
+        }),
+      );
+      return;
+    }
 
     if (payload.kind === 'facility') {
       if (payload.employeeId !== targetEmployee.id) return;
@@ -214,6 +238,24 @@ export function ShiftBoard({
     }
   };
 
+  const handleDropOnCell = async (targetEmployee: Employee, targetDate: string, e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverCell(null);
+    const payload = readShiftDragPayload(e);
+    if (!payload) return;
+    await performDrop(payload, targetEmployee, targetDate);
+  };
+
+  // スマホ: スタッフの顔や配置済みのマスを、長押ししてからドラッグ
+  const { ghost } = useTouchDragDrop({
+    containerRef: boardRef,
+    onHover: setDragOverCell,
+    onDrop: (payload, target) => {
+      const targetEmployee = employeeMap.get(target.employeeId);
+      if (targetEmployee) void performDrop(payload, targetEmployee, target.date);
+    },
+  });
+
   const handleOpenAutoAssignPreview = () => {
     const result = autoAssignShifts(employees, shifts, postRequirements, dates);
     setPreviewResult(result);
@@ -245,7 +287,7 @@ export function ShiftBoard({
   };
 
   return (
-    <div className="space-y-3">
+    <div ref={boardRef} className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
         <div className="flex items-center justify-between gap-2 sm:justify-start">
         <div className="flex items-center gap-2">
@@ -353,8 +395,13 @@ export function ShiftBoard({
         </div>
       </div>
 
-      {viewMode === 'edit' && notice && (
-        <div className="animate-rise rounded-lg border border-gold/50 bg-gold/10 px-4 py-2 text-xs text-gold">
+      {viewMode !== 'personal' && notice && (
+        // スマホでは画面の下(下タブの上)に浮かせる。表の上に挟むと、出入りのたびに表が上下にずれて、
+        // 続けてドラッグ・タップするときに位置がずれるため。PCは今までどおり表の上
+        <div
+          role="status"
+          className="animate-rise rounded-lg border border-gold/50 px-4 py-2 text-xs text-gold shadow-2xl max-sm:fixed max-sm:inset-x-4 max-sm:bottom-[calc(4.5rem+env(safe-area-inset-bottom))] max-sm:z-40 max-sm:bg-void-soft sm:bg-gold/10 sm:shadow-none"
+        >
           {notice}
         </div>
       )}
@@ -381,6 +428,7 @@ export function ShiftBoard({
 
       {viewMode === 'overview' && (
         <ShiftOverviewGrid
+          highlightCell={dragOverCell}
           employees={employees}
           shifts={shifts}
           postRequirements={postRequirements}
@@ -394,7 +442,7 @@ export function ShiftBoard({
 
       {viewMode === 'edit' && (
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-        <div className="max-h-[70vh] flex-1 overflow-auto rounded-xl border border-paper/10">
+        <div data-dnd-scroll className="max-h-[70vh] flex-1 overflow-auto rounded-xl border border-paper/10">
           <table className="border-collapse text-xs">
             <thead>
               <tr>
@@ -438,6 +486,9 @@ export function ShiftBoard({
                       <button
                         type="button"
                         data-compact
+                        data-dnd="staff"
+                        data-employee-id={emp.id}
+                        data-dnd-label={employeeName(emp)}
                         onClick={() => setInfoEmployee(emp)}
                         aria-label={t('staffInfo.heading', { name: employeeName(emp) })}
                         className="flex w-full flex-col items-center gap-0.5 text-center sm:hidden"
@@ -445,7 +496,11 @@ export function ShiftBoard({
                         <NinjaAvatar employee={emp} mood="neutral" size="xs" />
                         <span className="max-w-full truncate text-xs font-medium text-paper">{employeeName(emp)}</span>
                       </button>
-                      <div className="hidden items-center gap-2 sm:flex">
+                      <div
+                        className="hidden items-center gap-2 sm:flex"
+                        draggable
+                        onDragStart={(e) => setShiftDragPayload(e, { kind: 'staff', employeeId: emp.id })}
+                      >
                         <NinjaAvatar employee={emp} mood="neutral" size="sm" />
                         <div className="min-w-0">
                           <p className="truncate text-xs font-medium text-paper">{employeeName(emp)}</p>
@@ -515,6 +570,9 @@ export function ShiftBoard({
                         return (
                           <td
                             key={date}
+                            data-drop-cell
+                            data-employee-id={emp.id}
+                            data-date={date}
                             className={baseClass}
                             onDragOver={(e) => {
                               e.preventDefault();
@@ -539,6 +597,9 @@ export function ShiftBoard({
                       return (
                         <td
                           key={date}
+                          data-drop-cell
+                          data-employee-id={emp.id}
+                          data-date={date}
                           className={baseClass}
                           onDragOver={(e) => {
                             e.preventDefault();
@@ -550,6 +611,9 @@ export function ShiftBoard({
                           <button
                             type="button"
                             data-compact
+                            data-dnd="shift"
+                            data-shift-id={shift.id}
+                            data-dnd-label={`${employeeName(emp)} ${shift.start}–${shift.end}`}
                             draggable
                             onDragStart={(e) => setShiftDragPayload(e, { kind: 'shift', shiftId: shift.id })}
                             onClick={() => onEditShift(shift)}
@@ -585,7 +649,7 @@ export function ShiftBoard({
       )}
 
       {viewMode === 'edit' && <p className="hidden text-xs sm:text-[11px] text-paper-dim sm:block">{t('shiftBoard.legend')}</p>}
-      {viewMode === 'edit' && <p className="text-xs text-paper-dim sm:hidden">{t('shiftBoard.legendMobile')}</p>}
+      {viewMode !== 'personal' && <p className="text-xs text-paper-dim sm:hidden">{t('shiftBoard.legendMobile')}</p>}
 
       {coverageOpen && (
         <BottomSheet title={t('coverage.heading')} onClose={() => setCoverageOpen(false)}>
@@ -603,6 +667,16 @@ export function ShiftBoard({
       )}
 
       {infoEmployee && <StaffInfoSheet employee={infoEmployee} onClose={() => setInfoEmployee(null)} />}
+
+      {/* ドラッグ中(スマホ)に、指のそばに出す名前 */}
+      {ghost && (
+        <div
+          className="pointer-events-none fixed z-[70] -translate-x-1/2 -translate-y-[140%] whitespace-nowrap rounded-full border border-gold bg-void-soft px-3 py-1 text-xs font-medium text-gold shadow-2xl"
+          style={{ left: ghost.x, top: ghost.y }}
+        >
+          {ghost.label}
+        </div>
+      )}
 
       {previewResult && (
         <AutoAssignPreviewModal

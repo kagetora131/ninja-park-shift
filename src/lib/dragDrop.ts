@@ -7,10 +7,13 @@ export const SHIFT_DRAG_MIME = 'application/x-ninja-shift-drag';
  * ドラッグ中のペイロード。
  * - facility: 従業員行の「対応可能施設バッジ」をドラッグ中(その従業員の新規配置を作る)
  * - shift: 既存の配置セルをドラッグ中(別の日付・従業員へ移動、または既存配置と入れ替え)
+ * - staff: スタッフの顔(アバター)をドラッグ中(ドロップしたセルの日付に、そのスタッフを所属施設で配置する。
+ *          セルが誰の行でもよい。スマホの長押しドラッグで使う)
  */
 export type ShiftDragPayload =
   | { kind: 'facility'; employeeId: string; facility: FacilityId }
-  | { kind: 'shift'; shiftId: string };
+  | { kind: 'shift'; shiftId: string }
+  | { kind: 'staff'; employeeId: string };
 
 export function setShiftDragPayload(e: React.DragEvent, payload: ShiftDragPayload) {
   e.dataTransfer.setData(SHIFT_DRAG_MIME, JSON.stringify(payload));

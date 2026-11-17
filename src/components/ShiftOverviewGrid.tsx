@@ -14,6 +14,8 @@ interface ShiftOverviewGridProps {
   dates: string[];
   onEditShift: (shift: ShiftEntry) => void;
   onCreateShift: (draft: ShiftDraft) => void;
+  /** ドラッグ中、指の下にあるマスの印(`${employeeId}_${date}`) */
+  highlightCell?: string | null;
 }
 
 /** 俯瞰モード：勤務／休み／不足だけを示すコンパクトな月間ヒートマップ。 */
@@ -24,6 +26,7 @@ export function ShiftOverviewGrid({
   dates,
   onEditShift,
   onCreateShift,
+  highlightCell,
 }: ShiftOverviewGridProps) {
   const { employeeName, facilityName, t } = useLabelContext();
   const sortedEmployees = sortEmployeesByFacility(employees);
@@ -48,7 +51,7 @@ export function ShiftOverviewGrid({
 
   return (
     <div className="space-y-2">
-      <div className="max-h-[70vh] overflow-auto rounded-xl border border-paper/10">
+      <div data-dnd-scroll className="max-h-[70vh] overflow-auto rounded-xl border border-paper/10">
         <table className="border-collapse text-xs">
           <thead>
             <tr>
@@ -85,7 +88,12 @@ export function ShiftOverviewGrid({
                   style={{ borderLeft: `3px solid ${FACILITY_COLOR[emp.mainFacility]}` }}
                 >
                   {/* スマホ: 顔+名前を縦に並べた細い列。PC: 今までどおり横並び */}
-                  <div className="flex flex-col items-center gap-0.5 sm:hidden">
+                  <div
+                    className="flex flex-col items-center gap-0.5 sm:hidden"
+                    data-dnd="staff"
+                    data-employee-id={emp.id}
+                    data-dnd-label={employeeName(emp)}
+                  >
                     <NinjaAvatar employee={emp} mood="neutral" size="xs" />
                     <span className="max-w-[80px] truncate text-xs text-paper">{employeeName(emp)}</span>
                   </div>
@@ -97,10 +105,21 @@ export function ShiftOverviewGrid({
                 {dates.map((date) => {
                   const shift = shiftByKey.get(`${date}_${emp.id}`);
                   return (
-                    <td key={date} className="border-b border-r border-paper/5 p-0.5">
+                    <td
+                      key={date}
+                      data-drop-cell
+                      data-employee-id={emp.id}
+                      data-date={date}
+                      className={`border-b border-r border-paper/5 p-0.5 ${
+                        highlightCell === `${emp.id}_${date}` ? 'bg-gold/20 shadow-[inset_0_0_0_2px_var(--color-gold)]' : ''
+                      }`}
+                    >
                       <button
                         type="button"
                         data-compact
+                        {...(shift
+                          ? { 'data-dnd': 'shift', 'data-shift-id': shift.id, 'data-dnd-label': `${employeeName(emp)} ${shift.start}–${shift.end}` }
+                          : {})}
                         onClick={() =>
                           shift
                             ? onEditShift(shift)

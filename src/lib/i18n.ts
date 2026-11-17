@@ -515,7 +515,14 @@ const STRINGS = {
   'tab.short.myShifts': { ja: 'マイシフト', en: 'My Shifts' },
   'tab.short.myPreferences': { ja: '設定', en: 'Settings' },
 
-  'shiftBoard.legendMobile': { ja: 'マスを押すと、追加・編集できます。', en: 'Tap a cell to add or edit a shift.' },
+  'shiftBoard.legendMobile': {
+    ja: 'マスを押すと、追加・編集できます。スタッフの顔や配置済みのマスを長押ししてドラッグすると、配置・移動・入れ替えができます。',
+    en: 'Tap a cell to add or edit a shift. Press and hold a staff face or a filled cell, then drag, to assign, move or swap.',
+  },
+  'shiftBoard.staffDroppedNotice': {
+    ja: '{employee} を {date} に配置しました({facility})',
+    en: '{employee} was assigned on {date} ({facility})',
+  },
   'shiftBoard.blackDaysShort': { ja: '黒字 {black}/{total}日', en: 'Profit {black}/{total} days' },
   'shiftBoard.facilityLegendLabel': { ja: '施設の色', en: 'Facility colors' },
   'shiftBoard.autoAssignShort': { ja: '自動配置', en: 'Auto-assign' },
