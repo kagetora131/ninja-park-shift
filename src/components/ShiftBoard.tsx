@@ -12,7 +12,6 @@ import { FACILITY_COLOR, FACILITIES, capableFacilities, sortEmployeesByFacility 
 import { WEEKDAYS } from '../data/constants';
 import { SHIFT_PATTERNS } from '../data/shiftPatterns';
 import { formatDateJp, todayLocalIso } from '../lib/format';
-import { MOOD_COLOR } from '../lib/mood';
 import { readShiftDragPayload, setShiftDragPayload, type ShiftDragPayload } from '../lib/dragDrop';
 import { facilityShortLabel, formatMonthLabel, translateReason, weekdayLabel } from '../lib/i18n';
 import { autoAssignShifts } from '../lib/autoAssign';
@@ -458,7 +457,7 @@ export function ShiftBoard({
                         if (el) columnRefs.current.set(date, el);
                         else columnRefs.current.delete(date);
                       }}
-                      className={`sticky top-0 z-20 min-w-[64px] border-b border-r border-paper/10 px-1 py-2 text-center font-medium text-paper transition-colors ${
+                      className={`sticky top-0 z-20 min-w-[76px] border-b border-r border-paper/10 px-1 py-2 text-center font-medium text-paper transition-colors ${
                         highlightDate === date ? 'bg-gold/20' : 'bg-void-soft'
                       }`}
                     >
@@ -585,7 +584,7 @@ export function ShiftBoard({
                               type="button"
                               data-compact
                               onClick={() => onCreateShift({ mode: 'create', date, facility: emp.mainFacility, employeeId: emp.id })}
-                              className="flex h-9 w-full items-center justify-center rounded-sm border border-dashed border-paper/10 text-paper-dim/0 transition hover:border-gold/50 hover:text-gold"
+                              className="flex h-[92px] sm:h-[76px] w-full items-center justify-center rounded-sm border border-dashed border-paper/10 text-paper-dim/0 transition hover:border-gold/50 hover:text-gold"
                             >
                               <Plus size={11} />
                             </button>
@@ -620,17 +619,23 @@ export function ShiftBoard({
                             title={`${facilityName(shift.facility)} ${shift.start}–${shift.end}${
                               mood ? ` / ${mood.reasons.map((r) => translateReason(r, locale)).join(' / ')}` : ''
                             }`}
-                            className="relative flex h-9 w-full cursor-grab flex-col items-center justify-center gap-0.5 rounded-sm border-l-4 bg-void/60 transition active:cursor-grabbing hover:brightness-125"
+                            className="relative flex h-[92px] sm:h-[76px] w-full cursor-grab flex-col items-center justify-between rounded-sm border-l-4 bg-void/60 px-0.5 py-1 transition active:cursor-grabbing hover:brightness-125"
                             style={{ borderLeftColor: FACILITY_COLOR[shift.facility] }}
                           >
-                            <span className="leading-none text-paper">{shift.start}</span>
-                            <span className="leading-none text-paper-dim">{shift.end}</span>
-                            {mood && (
-                              <span
-                                className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full"
-                                style={{ background: MOOD_COLOR[mood.mood] }}
-                              />
-                            )}
+                            {/* 上: 顔(表情・応援バッジつき) / 中: 勤務時間 / 下: 配置した施設 */}
+                            <NinjaAvatar employee={emp} mood={mood?.mood ?? 'neutral'} facility={shift.facility} size="xs" />
+                            {/* PCは1行、スマホは2行(12px以上を保つため) */}
+                            <span className="flex flex-col items-center whitespace-nowrap text-xs leading-tight text-paper-dim sm:block sm:text-[10px] sm:leading-none">
+                              <span>{shift.start}</span>
+                              <span className="hidden sm:inline">–</span>
+                              <span>{shift.end}</span>
+                            </span>
+                            <span
+                              className="max-w-full truncate rounded-full px-1.5 py-[1px] text-[10px] font-medium leading-tight text-void max-sm:text-xs"
+                              style={{ background: FACILITY_COLOR[shift.facility] }}
+                            >
+                              {facilityShortLabel(shift.facility, FACILITIES[shift.facility].shortName, locale)}
+                            </span>
                           </button>
                         </td>
                       );

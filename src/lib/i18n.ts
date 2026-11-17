@@ -71,8 +71,8 @@ const STRINGS = {
     en: "Auto-assigned {created} shift(s), but couldn't find anyone available for {missing} slot(s).",
   },
   'shiftBoard.legend': {
-    ja: '施設バッジをセルへドラッグして新規配置、配置済みセルをドラッグすると別の日付・従業員へ移動(空きセル)または入れ替え(配置済みセル)ができます。クリックで詳細編集。右上のドットは表情(緑=上機嫌／灰=普通／金=疲れ気味／朱=不満)。',
-    en: 'Drag a facility badge onto a cell to assign a new shift. Drag an existing shift to move it (empty cell) or swap it (filled cell). Click a cell for detailed editing. The dot in the top-right shows mood (green = happy, gray = neutral, gold = tired, red = unhappy).',
+    ja: '施設バッジをセルへドラッグして新規配置、配置済みセルをドラッグすると別の日付・従業員へ移動(空きセル)または入れ替え(配置済みセル)ができます。クリックで詳細編集。マスの上は顔(枠の色が表情: 緑=上機嫌／灰=普通／金=疲れ気味／朱=不満)、中は勤務時間、下は配置した施設です。',
+    en: 'Drag a facility badge onto a cell to assign a new shift. Drag an existing shift to move it (empty cell) or swap it (filled cell). Click a cell for detailed editing. Each cell shows the face on top (ring color = mood: green = happy, gray = neutral, gold = tired, red = unhappy), the working hours in the middle, and the assigned facility at the bottom.',
   },
 
   'myShifts.viewOnlyNotice': {
